@@ -21,12 +21,18 @@
             },
             getters: {},
             mutations: {
-                SET_PLAYER_POS({ state }, { id, x, y }) {
+                SET_PLAYER_POS({ state }, { id, x, y }) { //TODO deprecate
                     if (!state.playersById[id]) {
                         throw new Error('Player for id does not exist!');
                     }
                     state.playersById[id].x = x
                     state.playersById[id].y = y
+                },
+                SET_PLAYER_POSITION({ state }, { id, x, y }) {
+                    if (state.playersById[id]) {
+                        state.playersById[id].x = x
+                        state.playersById[id].y = y
+                    }
                 },
                 SET_PLAYER_MOVING({ state }, { id, moving }) {
                     state.playersById[id].moving = moving
@@ -50,7 +56,7 @@
                     state.bullets[id].x = x
                     state.bullets[id].y = y
                 },
-                REMOVE_PLAYER({state}, playerId) {
+                REMOVE_PLAYER({ state }, playerId) {
                     if (state.playersById[playerId]) {
                         state.removeRequests.push({
                             firstKey: 'playersById',
@@ -58,7 +64,7 @@
                         })
                     }
                 },
-                REMOVE_BULLET({state}, bulletId) {
+                REMOVE_BULLET({ state }, bulletId) {
                     if (state.bullets[bulletId]) {
                         state.removeRequests.push({
                             firstKey: 'bullets',
@@ -178,7 +184,7 @@
     }
 
     function gc() {
-        for (let {firstKey, secondKey} of store.state.removeRequests) {
+        for (let { firstKey, secondKey } of store.state.removeRequests) {
             if (secondKey) {
                 delete store.state[firstKey][secondKey]
             }

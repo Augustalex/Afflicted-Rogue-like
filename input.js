@@ -95,44 +95,6 @@
 
         //keyup logic
 
-        let playerMoving = store.state.playersById[clientId].moving
-        if (wasReleased('right') && playerMoving.x > 0) {
-            store.commit('SET_PLAYER_MOVING', {
-                id: clientId,
-                moving: {
-                    x: 0,
-                    y: playerMoving.y
-                }
-            })
-        }
-        if (wasReleased('left') && playerMoving.x < 0) {
-            store.commit('SET_PLAYER_MOVING', {
-                id: clientId,
-                moving: {
-                    x: 0,
-                    y: playerMoving.y
-                }
-            })
-        }
-        if (wasReleased('up') && playerMoving.y < 0) {
-            store.commit('SET_PLAYER_MOVING', {
-                id: clientId,
-                moving: {
-                    x: playerMoving.x,
-                    y: 0
-                }
-            })
-        }
-        if (wasReleased('down') && playerMoving.y > 0) {
-            store.commit('SET_PLAYER_MOVING', {
-                id: clientId,
-                moving: {
-                    x: playerMoving.x,
-                    y: 0
-                }
-            })
-        }
-
         const resetAxesForReleasedKeys = (actionKeys, vector) => {
             let x = vector.x
             let y = vector.y
@@ -150,6 +112,21 @@
             }
             return { x, y }
         }
+
+        let playerMoving = player.moving
+        let updatedMovingVector = resetAxesForReleasedKeys(['up', 'down', 'left', 'right'], playerMoving)
+        if (updatedMovingVector.x !== playerMoving.x || updatedMovingVector.y !== playerMoving.y) {
+            store.commit('SET_PLAYER_MOVING', {
+                id: clientId,
+                moving: updatedMovingVector
+            })
+            store.commit('SET_PLAYER_POSITION', {
+                id: clientId,
+                x: player.x,
+                y: player.y
+            })
+        }
+
         let shootingDirection = player.shooting.direction
         let updatedVector = resetAxesForReleasedKeys(['shootUp', 'shootDown', 'shootLeft', 'shootRight'], shootingDirection)
         if (updatedVector.x !== shootingDirection.x || updatedVector.y !== shootingDirection.y) {
