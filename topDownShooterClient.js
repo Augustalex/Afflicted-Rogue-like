@@ -27,7 +27,7 @@ let localStore = Store({
                 state.playersById[id].moving = moving
             },
             SET_PLAYER_SHOOTING({ state }, { id, shooting }) {
-                state.playersById[id].moving = shooting
+                state.playersById[id].shooting = shooting
             },
             ADD_PLAYER({ state }, player) {
                 state.playersById[player.id] = player
@@ -107,7 +107,6 @@ let keysDown = new Set();
 const isActionKeyDown = actionKey => keymap[actionKey].some(k => keysDown.has(k))
 const matchesActionKey = (actionKey, key) => keymap[actionKey].some(k => k === key)
 window.addEventListener('keydown', e => {
-    //TODO Keydown seems to be called repeatably when pressing down a key, why?
     if (keysDown.has(e.key)) return
     keysDown.add(e.key)
 
@@ -127,21 +126,20 @@ window.addEventListener('keydown', e => {
         movingY = -1
     }
 
-    if (isActionKeyDown('shootRight') ||
-        isActionKeyDown('shootLeft') ||
-        isActionKeyDown('shootUp') ||
-        isActionKeyDown('shootDown')) {
-        let direction = {}
-        if (isActionKeyDown('shootRight')) {direction = { x: 1, y: 0 }}
-        if (isActionKeyDown('shootLeft')) {direction = { x: -1, y: 0 }}
-        if (isActionKeyDown('shootUp')) {direction = { x: 0, y: -1 }}
-        if (isActionKeyDown('shootDown')) {direction = { x: 0, y: 1 }}
-        store.dispatch('firePlayerWeapon', {
+    let shootDir;
+    if (isActionKeyDown('shootRight')) {
+        console.log(1);
+        shootDir = { x: 1, y: 0 }
+    }
+    if (isActionKeyDown('shootLeft')) {shootDir = { x: -1, y: 0 }}
+    if (isActionKeyDown('shootUp')) {shootDir = { x: 0, y: -1 }}
+    if (isActionKeyDown('shootDown')) {shootDir = { x: 0, y: 1 }}
+    if (shootDir) {
+        store.commit('SET_PLAYER_SHOOTING', {
             id: clientId,
-            direction
+            shooting: shootDir
         })
     }
-
     if (movingX || movingY) {
         store.commit('SET_PLAYER_MOVING', {
             id: clientId,
@@ -191,6 +189,12 @@ window.addEventListener('keyup', e => {
             }
         })
     }
+    if (!keysDown.has(['shootRight', 'shootLeft', 'shootUp', 'shootDown'])) {
+        store.commit('SET_PLAYER_SHOOTING', {
+            id: clientId,
+            shooting: null
+        })
+    }
 })
 
 function draw(canvas, context) {
@@ -228,7 +232,15 @@ function fysik(delta) {
             y += player.speed * delta * player.moving.y
         }
         localStore.commit('SET_PLAYER_POS', { id: playerId, x, y })
+
+        if (player.shooting) {
+            localStore.dispatch('firePlayerWeapon', {
+                id: playerId,
+                direction: player.shooting,
+            });
+        }
     }
+
     for (let bulletId of Object.keys(store.state.bullets)) {
         let bullet = store.state.bullets[bulletId]
         let bulletSpeed = 50
