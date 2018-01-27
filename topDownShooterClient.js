@@ -180,9 +180,10 @@
     document.body.appendChild(canvas)
     let context = canvas.getContext('2d')
     localStore.commit('SET_BLOOD_ENGINE', Blood(canvas, context));
-    let firstDraw = true;
-    var myImage = new Image();
-    myImage.src = './sprites/back.png';
+    var backgroundImage = new Image();
+    backgroundImage.src = './sprites/back.png';
+    var vignetteImage = new Image();
+    vignetteImage.src = './sprites/vignette.png';
 
     let respawning = false
     let lastTime = 0
@@ -211,10 +212,10 @@
 
     function draw(canvas, context) {
         context.clearRect(0, 0, canvas.width, canvas.height)
-        if(firstDraw){
-        }
-        if(myImage.complete){
-            context.drawImage(myImage,0,0,768,768)
+        if(backgroundImage.complete){
+            context.globalAlpha = 0.8;
+            context.drawImage(backgroundImage,0,0,768,768)
+            context.globalAlpha = 1;
         }
         store.state.blood.animateAndDraw()
 
@@ -226,6 +227,9 @@
         for (let bulletId of Object.keys(store.state.bullets)) {
             let bullet = store.state.bullets[bulletId]
             drawBullet(context, bullet)
+        }
+        if(vignetteImage.complete){
+            context.drawImage(vignetteImage,0,0,768,768)
         }
     }
 
