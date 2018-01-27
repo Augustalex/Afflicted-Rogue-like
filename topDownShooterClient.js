@@ -16,37 +16,42 @@ let localStore = Store({
         },
         getters: {},
         mutations: {
-            SET_PLAYER_POS({state}, {id, x, y}) {
+            SET_PLAYER_POS({ state }, { id, x, y }) {
                 if (!state.playersById[id]) {
                     throw new Error('Player for id does not exist!');
                 }
                 state.playersById[id].x = x
                 state.playersById[id].y = y
             },
-            SET_PLAYER_MOVING({state}, {id, moving}) {
+            SET_PLAYER_MOVING({ state }, { id, moving }) {
                 state.playersById[id].moving = moving
             },
-            ADD_PLAYER({state}, player) {
+            SET_PLAYER_SHOOTING({ state }, { id, shooting }) {
+                state.playersById[id].moving = shooting
+            },
+            ADD_PLAYER({ state }, player) {
                 state.playersById[player.id] = player
             },
-            ADD_BULLET({state}, bullet) {
+            ADD_BULLET({ state }, bullet) {
                 state.bullets[bullet.id] = bullet
             },
-            SET_BULLET_POS({state}, {id, x, y}) {
+            SET_BULLET_POS({ state }, { id, x, y }) {
                 state.bullets[id].x = x
                 state.bullets[id].y = y
             },
-            REMOVE_BULLET({state}, bulletId) {
+            REMOVE_BULLET({ state }, bulletId) {
                 state.bullets[bulletId]._remove = true
             }
         },
         actions: {
-            firePlayerWeapon({state, commit}, {id}) {
+            firePlayerWeapon({ state, commit }, { id, direction }) {
                 let playerPos = state.playersById[id]
                 let bulletId = genId()
-                let bullet = {id: bulletId, x: playerPos.x, y: playerPos.y}
+                let bullet = {
+                    id: bulletId, x: playerPos.x, y: playerPos.y, direction
+                }
                 commit('ADD_BULLET', bullet)
-                
+
                 setTimeout(() => {
                     commit('REMOVE_BULLET', bulletId)
                 }, 2500);
@@ -79,11 +84,11 @@ let lastTime = 0
 const loop = time => {
     let delta = ((time - lastTime) * .01) || .16
     lastTime = time
-    
+
     fysik(delta)
     draw(canvas, context)
     gc()
-    
+
     requestAnimationFrame(loop)
 }
 loop()
@@ -92,7 +97,11 @@ let keymap = {
     up: ['w'],
     down: ['s'],
     left: ['a'],
-    right: ['d']
+    right: ['d'],
+    shootUp: ['ArrowUp'],
+    shootDown: ['ArrowDown'],
+    shootLeft: ['ArrowLeft'],
+    shootRight: ['ArrowRight'],
 }
 let keysDown = new Set();
 const isActionKeyDown = actionKey => keymap[actionKey].some(k => keysDown.has(k))
@@ -101,7 +110,7 @@ window.addEventListener('keydown', e => {
     //TODO Keydown seems to be called repeatably when pressing down a key, why?
     if (keysDown.has(e.key)) return
     keysDown.add(e.key)
-    
+
     let player = store.state.playersById[clientId]
     let movingX = player.moving ? player.moving.x : 0
     let movingY = player.moving ? player.moving.y : 0
@@ -117,11 +126,22 @@ window.addEventListener('keydown', e => {
     if (isActionKeyDown('up')) {
         movingY = -1
     }
-    if (e.key === 'Enter') {
+
+    if (isActionKeyDown('shootRight') ||
+        isActionKeyDown('shootLeft') ||
+        isActionKeyDown('shootUp') ||
+        isActionKeyDown('shootDown')) {
+        let direction = {}
+        if (isActionKeyDown('shootRight')) {direction = { x: 1, y: 0 }}
+        if (isActionKeyDown('shootLeft')) {direction = { x: -1, y: 0 }}
+        if (isActionKeyDown('shootUp')) {direction = { x: 0, y: -1 }}
+        if (isActionKeyDown('shootDown')) {direction = { x: 0, y: 1 }}
         store.dispatch('firePlayerWeapon', {
-            id: clientId
+            id: clientId,
+            direction
         })
     }
+
     if (movingX || movingY) {
         store.commit('SET_PLAYER_MOVING', {
             id: clientId,
@@ -179,14 +199,14 @@ function draw(canvas, context) {
     for (let player of players) {
         drawPlayer(context, player)
     }
-    
+
     for (let bulletId of Object.keys(store.state.bullets)) {
         let bullet = store.state.bullets[bulletId]
         drawBullet(context, bullet)
     }
 }
 
-function drawPlayer(context, {x, y, color}) {
+function drawPlayer(context, { x, y, color }) {
     context.fillStyle = color
     context.fillRect(x, y, 10, 10);
 }
@@ -207,14 +227,15 @@ function fysik(delta) {
         if (player.moving && player.moving.y) {
             y += player.speed * delta * player.moving.y
         }
-        localStore.commit('SET_PLAYER_POS', {id: playerId, x, y})
+        localStore.commit('SET_PLAYER_POS', { id: playerId, x, y })
     }
     for (let bulletId of Object.keys(store.state.bullets)) {
         let bullet = store.state.bullets[bulletId]
+        let bulletSpeed = 50
         localStore.commit('SET_BULLET_POS', {
             id: bulletId,
-            x: bullet.x + 50 * delta,
-            y: bullet.y
+            x: bullet.x + bullet.direction.x * bulletSpeed * delta,
+            y: bullet.y + bullet.direction.y * bulletSpeed * delta,
         })
     }
 }
