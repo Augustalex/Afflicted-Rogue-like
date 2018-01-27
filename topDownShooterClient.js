@@ -133,13 +133,16 @@
     });
 
     let canvas = document.createElement('canvas')
-    canvas.width = 500;
-    canvas.height = 500;
-    canvas.style.width = '500px'
-    canvas.style.height = '500px'
+    canvas.width = 768;
+    canvas.height = 768;
+    canvas.style.width = '768px'
+    canvas.style.height = '768px'
     document.body.appendChild(canvas)
     let context = canvas.getContext('2d')
     localStore.commit('SET_BLOOD_ENGINE', Blood(canvas, context));
+    let firstDraw = true;
+    var myImage = new Image();
+    myImage.src = './sprites/back.png';
 
     let lastTime = 0
     const loop = time => {
@@ -157,6 +160,11 @@
 
     function draw(canvas, context) {
         context.clearRect(0, 0, canvas.width, canvas.height)
+        if(firstDraw){
+        }
+        if(myImage.complete){
+            context.drawImage(myImage,0,0,768,768)
+        }
         store.state.blood.animateAndDraw()
 
         let players = Object.keys(store.state.playersById).map(key => store.state.playersById[key])
