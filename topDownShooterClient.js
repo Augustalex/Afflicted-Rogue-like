@@ -1,4 +1,5 @@
 (function () {
+    let Blood = require('./Blood.js')
     let io = require('socket.io-client')
     let socket = io.connect('http://127.0.0.1:3032');
     //let socket = io.connect('http://192.168.1.106:3032');
@@ -17,7 +18,8 @@
             state: {
                 playersById: {},
                 bullets: {},
-                removeRequests: []
+                removeRequests: [],
+                blood: null
             },
             getters: {},
             mutations: {
@@ -56,12 +58,14 @@
                     state.bullets[id].x = x
                     state.bullets[id].y = y
                 },
-                REMOVE_PLAYER({ state }, playerId) {
+                REMOVE_PLAYER({ state, commit }, playerId) {
                     if (state.playersById[playerId]) {
+                        let { x, y } = state.playersById[playerId]
                         state.removeRequests.push({
                             firstKey: 'playersById',
                             secondKey: playerId
                         })
+                        commit('ADD_BLOOD', { x, y })
                     }
                 },
                 REMOVE_BULLET({ state }, bulletId) {
@@ -70,6 +74,14 @@
                             firstKey: 'bullets',
                             secondKey: bulletId
                         })
+                    }
+                },
+                SET_BLOOD_ENGINE({ state }, blood) {
+                    state.blood = blood
+                },
+                ADD_BLOOD({ state }, { x, y }) {
+                    if (state.blood) {
+                        state.blood.add(x, y)
                     }
                 }
             },
@@ -127,6 +139,7 @@
     canvas.style.height = '500px'
     document.body.appendChild(canvas)
     let context = canvas.getContext('2d')
+    localStore.commit('SET_BLOOD_ENGINE', Blood(canvas, context));
 
     let lastTime = 0
     const loop = time => {
@@ -144,6 +157,8 @@
 
     function draw(canvas, context) {
         context.clearRect(0, 0, canvas.width, canvas.height)
+        store.state.blood.animateAndDraw()
+
         let players = Object.keys(store.state.playersById).map(key => store.state.playersById[key])
         for (let player of players) {
             drawPlayer(context, player)
