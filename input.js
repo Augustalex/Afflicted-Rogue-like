@@ -28,7 +28,7 @@ const anyPressed = (actionKeys) => actionKeys.some(key => wasPressed(key))
 
 let keyboardState = new Set();
 
-const stickThreshold = .5
+const stickThreshold = .2
 
 // const isActionKeyDown = actionKey => keymap[actionKey].some(k => keysDown.has(k))
 // const matchesActionKey = (actionKey, key) => keymap[actionKey].some(k => k === key)
@@ -63,23 +63,31 @@ module.exports = function input(store) {
         })
     }
     
-    let shootDir;
-    if (wasPressed('shootRight')) {
-        shootDir = {x: 1, y: 0}
+    const maxAxesForPressedKeys = (actionKeys, direction) => {
+        let [up, down, left, right] = actionKeys
+        let x = direction.x
+        let y = direction.y
+        if (wasPressed(right)) {
+            x = 1
+        }
+        if (wasPressed(down)) {
+            y = 1
+        }
+        if (wasPressed(left)) {
+            x = -1
+        }
+        if (wasPressed(up)) {
+            y = -1
+        }
+        return {x, y}
     }
-    if (wasPressed('shootLeft')) {
-        shootDir = {x: -1, y: 0}
-    }
-    if (wasPressed('shootUp')) {
-        shootDir = {x: 0, y: -1}
-    }
-    if (wasPressed('shootDown')) {
-        shootDir = {x: 0, y: 1}
-    }
-    if (shootDir) {
+    
+    let playerShootingDirection = player.shooting.direction
+    let newShootingVector = maxAxesForPressedKeys(['shootUp', 'shootDown', 'shootLeft', 'shootRight'], player.shooting.direction)
+    if (playerShootingDirection.x !== newShootingVector.x || playerShootingDirection.y !== newShootingVector.y) {
         store.commit('SET_PLAYER_SHOOTING_DIRECTION', {
             id: clientId,
-            direction: shootDir
+            direction: newShootingVector
         })
     }
     
@@ -123,38 +131,25 @@ module.exports = function input(store) {
         })
     }
     
-    const getUpdatedVector = (actionKeys, vector) => {
-        if (wasReleased(actionKeys[3]) && vector.x > 0) {
-            return {
-                x: 0,
-                y: vector.y
-            }
-        }
-        if (wasReleased(actionKeys[2]) && vector.x < 0) {
-            return {
-                x: 0,
-                y: vector.y
-            }
-        }
+    const resetAxesForReleasedKeys = (actionKeys, vector) => {
+        let x = vector.x
+        let y = vector.y
         if (wasReleased(actionKeys[0]) && vector.y < 0) {
-            return {
-                x: vector.x,
-                y: 0
-            }
+            y = 0
         }
         if (wasReleased(actionKeys[1]) && vector.y > 0) {
-            return {
-                x: vector.x,
-                y: 0
-            }
+            y = 0
         }
-        return {
-            x: vector.x,
-            y: vector.y
+        if (wasReleased(actionKeys[2]) && vector.x < 0) {
+            x = 0
         }
+        if (wasReleased(actionKeys[3]) && vector.x > 0) {
+            x = 0
+        }
+        return {x, y}
     }
     let shootingDirection = player.shooting.direction
-    let updatedVector = getUpdatedVector(['shootUp', 'shootDown', 'shootLeft', 'shootRight'], shootingDirection)
+    let updatedVector = resetAxesForReleasedKeys(['shootUp', 'shootDown', 'shootLeft', 'shootRight'], shootingDirection)
     if (updatedVector.x !== shootingDirection.x || updatedVector.y !== shootingDirection.y) {
         store.commit('SET_PLAYER_SHOOTING_DIRECTION', {
             id: clientId,
@@ -197,6 +192,7 @@ function readGamepadState() {
             keysDown.delete(left)
             keysDown.delete(right)
         }
+        
         if (Math.abs(stick.y) > stickThreshold) {
             keysDown.delete(stick.y > 0 ? up : down)
             keysDown.add(stick.y > 0 ? down : up)
@@ -214,11 +210,9 @@ function readGamepadState() {
 window.addEventListener('keydown', e => {
     //TODO Keydown seems to be called repeatably when pressing down a key, why?
     if (keyboardState.has(e.key)) return
-    console.log('keydown', e.key)
     keyboardState.add(e.key)
 })
 
 window.addEventListener('keyup', e => {
-    console.log('keyup', e.key)
     keyboardState.delete(e.key)
 })
