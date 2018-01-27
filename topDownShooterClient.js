@@ -2,7 +2,7 @@ let io = require('socket.io-client')
 let socket = io.connect('http://127.0.0.1:3032');
 let Store = require('./Store.js')
 let StoreProxy = require('./StoreProxy.js')
-const gamepadController = require('./gamepadController.js')
+const input = require('./input.js');
 const rand255 = () => Math.round(Math.random() * 255)
 const genId = () => `${rand255()}${rand255()}${rand255()}`
 const color = `rgb(${rand255()},${rand255()},${rand255()})`
@@ -16,42 +16,42 @@ let localStore = Store({
         },
         getters: {},
         mutations: {
-            SET_PLAYER_POS({ state }, { id, x, y }) {
+            SET_PLAYER_POS({state}, {id, x, y}) {
                 if (!state.playersById[id]) {
                     throw new Error('Player for id does not exist!');
                 }
                 state.playersById[id].x = x
                 state.playersById[id].y = y
             },
-            SET_PLAYER_MOVING({ state }, { id, moving }) {
+            SET_PLAYER_MOVING({state}, {id, moving}) {
                 state.playersById[id].moving = moving
             },
-            SET_PLAYER_SHOOTING({ state }, { id, shooting }) {
+            SET_PLAYER_SHOOTING({state}, {id, shooting}) {
                 state.playersById[id].shooting = shooting
             },
-            ADD_PLAYER({ state }, player) {
+            ADD_PLAYER({state}, player) {
                 state.playersById[player.id] = player
             },
-            ADD_BULLET({ state }, bullet) {
+            ADD_BULLET({state}, bullet) {
                 state.bullets[bullet.id] = bullet
             },
-            SET_BULLET_POS({ state }, { id, x, y }) {
+            SET_BULLET_POS({state}, {id, x, y}) {
                 state.bullets[id].x = x
                 state.bullets[id].y = y
             },
-            REMOVE_BULLET({ state }, bulletId) {
+            REMOVE_BULLET({state}, bulletId) {
                 state.bullets[bulletId]._remove = true
             }
         },
         actions: {
-            firePlayerWeapon({ state, commit }, { id, direction }) {
+            firePlayerWeapon({state, commit}, {id, direction}) {
                 let playerPos = state.playersById[id]
                 let bulletId = genId()
                 let bullet = {
                     id: bulletId, x: playerPos.x, y: playerPos.y, direction
                 }
                 commit('ADD_BULLET', bullet)
-
+                
                 setTimeout(() => {
                     commit('REMOVE_BULLET', bulletId)
                 }, 2500);
@@ -84,118 +84,15 @@ let lastTime = 0
 const loop = time => {
     let delta = ((time - lastTime) * .01) || .16
     lastTime = time
-
+    
+    input(store)
     fysik(delta)
     draw(canvas, context)
     gc()
-
+    
     requestAnimationFrame(loop)
 }
 loop()
-
-let keymap = {
-    up: ['w'],
-    down: ['s'],
-    left: ['a'],
-    right: ['d'],
-    shootUp: ['ArrowUp'],
-    shootDown: ['ArrowDown'],
-    shootLeft: ['ArrowLeft'],
-    shootRight: ['ArrowRight'],
-}
-let keysDown = new Set();
-const isActionKeyDown = actionKey => keymap[actionKey].some(k => keysDown.has(k))
-const matchesActionKey = (actionKey, key) => keymap[actionKey].some(k => k === key)
-window.addEventListener('keydown', e => {
-    if (keysDown.has(e.key)) return
-    keysDown.add(e.key)
-
-    let player = store.state.playersById[clientId]
-    let movingX = player.moving ? player.moving.x : 0
-    let movingY = player.moving ? player.moving.y : 0
-    if (isActionKeyDown('right')) {
-        movingX = 1
-    }
-    if (isActionKeyDown('down')) {
-        movingY = 1
-    }
-    if (isActionKeyDown('left')) {
-        movingX = -1
-    }
-    if (isActionKeyDown('up')) {
-        movingY = -1
-    }
-
-    let shootDir;
-    if (isActionKeyDown('shootRight')) {
-        console.log(1);
-        shootDir = { x: 1, y: 0 }
-    }
-    if (isActionKeyDown('shootLeft')) {shootDir = { x: -1, y: 0 }}
-    if (isActionKeyDown('shootUp')) {shootDir = { x: 0, y: -1 }}
-    if (isActionKeyDown('shootDown')) {shootDir = { x: 0, y: 1 }}
-    if (shootDir) {
-        store.commit('SET_PLAYER_SHOOTING', {
-            id: clientId,
-            shooting: shootDir
-        })
-    }
-    if (movingX || movingY) {
-        store.commit('SET_PLAYER_MOVING', {
-            id: clientId,
-            moving: {
-                x: movingX,
-                y: movingY
-            }
-        })
-    }
-})
-window.addEventListener('keyup', e => {
-    keysDown.delete(e.key)
-    let playerMoving = store.state.playersById[clientId].moving
-    if (matchesActionKey('right', e.key) && playerMoving.x > 0) {
-        store.commit('SET_PLAYER_MOVING', {
-            id: clientId,
-            moving: {
-                x: 0,
-                y: playerMoving.y
-            }
-        })
-    }
-    if (matchesActionKey('left', e.key) && playerMoving.x < 0) {
-        store.commit('SET_PLAYER_MOVING', {
-            id: clientId,
-            moving: {
-                x: 0,
-                y: playerMoving.y
-            }
-        })
-    }
-    if (matchesActionKey('up', e.key) && playerMoving.y < 0) {
-        store.commit('SET_PLAYER_MOVING', {
-            id: clientId,
-            moving: {
-                x: playerMoving.x,
-                y: 0
-            }
-        })
-    }
-    if (matchesActionKey('down', e.key) && playerMoving.y > 0) {
-        store.commit('SET_PLAYER_MOVING', {
-            id: clientId,
-            moving: {
-                x: playerMoving.x,
-                y: 0
-            }
-        })
-    }
-    if (!keysDown.has(['shootRight', 'shootLeft', 'shootUp', 'shootDown'])) {
-        store.commit('SET_PLAYER_SHOOTING', {
-            id: clientId,
-            shooting: null
-        })
-    }
-})
 
 function draw(canvas, context) {
     context.clearRect(0, 0, canvas.width, canvas.height)
@@ -203,14 +100,14 @@ function draw(canvas, context) {
     for (let player of players) {
         drawPlayer(context, player)
     }
-
+    
     for (let bulletId of Object.keys(store.state.bullets)) {
         let bullet = store.state.bullets[bulletId]
         drawBullet(context, bullet)
     }
 }
 
-function drawPlayer(context, { x, y, color }) {
+function drawPlayer(context, {x, y, color}) {
     context.fillStyle = color
     context.fillRect(x, y, 10, 10);
 }
@@ -231,16 +128,17 @@ function fysik(delta) {
         if (player.moving && player.moving.y) {
             y += player.speed * delta * player.moving.y
         }
-        localStore.commit('SET_PLAYER_POS', { id: playerId, x, y })
-
+        localStore.commit('SET_PLAYER_POS', {id: playerId, x, y})
+        
         if (player.shooting) {
+            console.log('player.shooting', player.shooting)
             localStore.dispatch('firePlayerWeapon', {
                 id: playerId,
                 direction: player.shooting,
             });
         }
     }
-
+    
     for (let bulletId of Object.keys(store.state.bullets)) {
         let bullet = store.state.bullets[bulletId]
         let bulletSpeed = 50

@@ -24,6 +24,7 @@ let previousKeysDown = new Set();
 let keysDown = new Set();
 const wasReleased = (actionKey) => keymap[actionKey].some(key => previousKeysDown.has(key) && !keysDown.has(key))
 const wasPressed = (actionKey) => keymap[actionKey].some(key => !previousKeysDown.has(key) && keysDown.has(key))
+const anyPressed = (actionKeys) => actionKeys.some(key => wasPressed(key))
 
 let keyboardState = new Set();
 
@@ -52,30 +53,6 @@ module.exports = function input(store) {
     if (wasPressed('up')) {
         movingY = -1
     }
-    
-    if (wasPressed('shootRight') ||
-        wasPressed('shootLeft') ||
-        wasPressed('shootUp') ||
-        wasPressed('shootDown')) {
-        let direction = {}
-        if (wasPressed('shootRight')) {
-            direction = {x: 1, y: 0}
-        }
-        if (wasPressed('shootLeft')) {
-            direction = {x: -1, y: 0}
-        }
-        if (wasPressed('shootUp')) {
-            direction = {x: 0, y: -1}
-        }
-        if (wasPressed('shootDown')) {
-            direction = {x: 0, y: 1}
-        }
-        store.dispatch('firePlayerWeapon', {
-            id: clientId,
-            direction
-        })
-    }
-    
     if (movingX || movingY) {
         store.commit('SET_PLAYER_MOVING', {
             id: clientId,
@@ -86,6 +63,25 @@ module.exports = function input(store) {
         })
     }
     
+    let shootDir;
+    if (wasPressed('shootRight')) {
+        shootDir = {x: 1, y: 0}
+    }
+    if (wasPressed('shootLeft')) {
+        shootDir = {x: -1, y: 0}
+    }
+    if (wasPressed('shootUp')) {
+        shootDir = {x: 0, y: -1}
+    }
+    if (wasPressed('shootDown')) {
+        shootDir = {x: 0, y: 1}
+    }
+    if (shootDir) {
+        store.commit('SET_PLAYER_SHOOTING', {
+            id: clientId,
+            shooting: shootDir
+        })
+    }
     
     //keyup logic
     
@@ -124,6 +120,45 @@ module.exports = function input(store) {
                 x: playerMoving.x,
                 y: 0
             }
+        })
+    }
+    
+    const getUpdatedVector = (actionKeys, vector) => {
+        if (wasReleased(actionKeys[3]) && vector.x > 0) {
+            return {
+                x: 0,
+                y: vector.y
+            }
+        }
+        if (wasReleased(actionKeys[2]) && vector.x < 0) {
+            return {
+                x: 0,
+                y: vector.y
+            }
+        }
+        if (wasReleased(actionKeys[0]) && vector.y < 0) {
+            return {
+                x: vector.x,
+                y: 0
+            }
+        }
+        if (wasReleased(actionKeys[1]) && vector.y > 0) {
+            return {
+                x: vector.x,
+                y: 0
+            }
+        }
+        return {
+            x: vector.x,
+            y: vector.y
+        }
+    }
+    let playerShooting = player.shooting || {x: 0, y: 0}
+    let updatedVector = getUpdatedVector(['shootUp', 'shootDown', 'shootLeft', 'shootRight'], playerShooting)
+    if (updatedVector.x !== playerShooting.x || updatedVector.y !== playerShooting.y) {
+        store.commit('SET_PLAYER_SHOOTING', {
+            id: clientId,
+            shooting: updatedVector
         })
     }
 }
@@ -179,9 +214,11 @@ function readGamepadState() {
 window.addEventListener('keydown', e => {
     //TODO Keydown seems to be called repeatably when pressing down a key, why?
     if (keyboardState.has(e.key)) return
+    console.log('keydown', e.key)
     keyboardState.add(e.key)
 })
 
 window.addEventListener('keyup', e => {
+    console.log('keyup', e.key)
     keyboardState.delete(e.key)
 })
