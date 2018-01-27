@@ -8,7 +8,7 @@
     const leftStickLeft = 'ls:x:0'
     const leftStickDown = 'ls:y:1'
     const leftStickUp = 'ls:y:0'
-    
+
     const keymap = {
         up: ['w', leftStickUp],
         down: ['s', leftStickDown],
@@ -19,15 +19,15 @@
         shootLeft: ['ArrowLeft', rightStickLeft],
         shootRight: ['ArrowRight', rightStickRight],
     }
-    
+
     let previousKeysDown = new Set();
     let keysDown = new Set();
     const wasReleased = (actionKey) => keymap[actionKey].some(key => previousKeysDown.has(key) && !keysDown.has(key))
     const wasPressed = (actionKey) => keymap[actionKey].some(key => !previousKeysDown.has(key) && keysDown.has(key))
     const anyPressed = (actionKeys) => actionKeys.some(key => wasPressed(key))
-    
+
     let keyboardState = new Set();
-    
+
     const stickThreshold = .2
 
 // const isActionKeyDown = actionKey => keymap[actionKey].some(k => keysDown.has(k))
@@ -37,10 +37,10 @@
         keysDown = new Set()
         readKeyboardState()
         readGamepadState()
-        
+
         let player = store.state.playersById[clientId]
         if (!player) return
-        
+
         let movingX = player.moving ? player.moving.x : 0
         let movingY = player.moving ? player.moving.y : 0
         if (wasPressed('right')) {
@@ -55,7 +55,7 @@
         if (wasPressed('up')) {
             movingY = -1
         }
-        if (movingX || movingY) {
+        if (movingX !== player.moving.x || movingY !== player.moving.y) {
             store.commit('SET_PLAYER_MOVING', {
                 id: clientId,
                 moving: {
@@ -64,7 +64,7 @@
                 }
             })
         }
-        
+
         const maxAxesForPressedKeys = (actionKeys, direction) => {
             let [up, down, left, right] = actionKeys
             let x = direction.x
@@ -81,9 +81,9 @@
             if (wasPressed(up)) {
                 y = -1
             }
-            return {x, y}
+            return { x, y }
         }
-        
+
         let playerShootingDirection = player.shooting.direction
         let newShootingVector = maxAxesForPressedKeys(['shootUp', 'shootDown', 'shootLeft', 'shootRight'], player.shooting.direction)
         if (playerShootingDirection.x !== newShootingVector.x || playerShootingDirection.y !== newShootingVector.y) {
@@ -92,9 +92,9 @@
                 direction: newShootingVector
             })
         }
-        
+
         //keyup logic
-        
+
         let playerMoving = store.state.playersById[clientId].moving
         if (wasReleased('right') && playerMoving.x > 0) {
             store.commit('SET_PLAYER_MOVING', {
@@ -132,7 +132,7 @@
                 }
             })
         }
-        
+
         const resetAxesForReleasedKeys = (actionKeys, vector) => {
             let x = vector.x
             let y = vector.y
@@ -148,7 +148,7 @@
             if (wasReleased(actionKeys[3]) && vector.x > 0) {
                 x = 0
             }
-            return {x, y}
+            return { x, y }
         }
         let shootingDirection = player.shooting.direction
         let updatedVector = resetAxesForReleasedKeys(['shootUp', 'shootDown', 'shootLeft', 'shootRight'], shootingDirection)
@@ -159,23 +159,23 @@
             })
         }
     }
-    
+
     function readKeyboardState() {
         for (let key of [...keyboardState]) {
             keysDown.add(key)
         }
     }
-    
+
     function readGamepadState() {
         let gamepadOne = gamepadController.getGamepads()[0];
         if (!gamepadOne) return
-        
+
         for (let i = 0; i < gamepadOne.buttons.length; i++) {
             if (gamepadOne.buttons[i].pressed) {
                 alert(`BUTTON ${i} PRESSED!`);
             }
         }
-        
+
         let rightStick = {
             x: gamepadOne.axes[2],
             y: gamepadOne.axes[3],
@@ -184,7 +184,7 @@
             x: gamepadOne.axes[0],
             y: gamepadOne.axes[1],
         }
-        
+
         const stick = (stick, up, down, left, right) => {
             if (Math.abs(stick.x) > stickThreshold) {
                 keysDown.delete(stick.x > 0 ? left : right)
@@ -194,7 +194,7 @@
                 keysDown.delete(left)
                 keysDown.delete(right)
             }
-            
+
             if (Math.abs(stick.y) > stickThreshold) {
                 keysDown.delete(stick.y > 0 ? up : down)
                 keysDown.add(stick.y > 0 ? down : up)
@@ -204,17 +204,17 @@
                 keysDown.delete(down)
             }
         }
-        
+
         stick(rightStick, rightStickUp, rightStickDown, rightStickLeft, rightStickRight)
         stick(leftStick, leftStickUp, leftStickDown, leftStickLeft, leftStickRight)
     }
-    
+
     window.addEventListener('keydown', e => {
         //TODO Keydown seems to be called repeatably when pressing down a key, why?
         if (keyboardState.has(e.key)) return
         keyboardState.add(e.key)
     })
-    
+
     window.addEventListener('keyup', e => {
         keyboardState.delete(e.key)
     })
