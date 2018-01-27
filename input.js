@@ -77,9 +77,9 @@ module.exports = function input(store) {
         shootDir = {x: 0, y: 1}
     }
     if (shootDir) {
-        store.commit('SET_PLAYER_SHOOTING', {
+        store.commit('SET_PLAYER_SHOOTING_DIRECTION', {
             id: clientId,
-            shooting: shootDir
+            direction: shootDir
         })
     }
     

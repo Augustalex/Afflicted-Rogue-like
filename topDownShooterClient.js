@@ -57,7 +57,7 @@ let localStore = Store({
                     id: bulletId, x: playerPos.x, y: playerPos.y, direction
                 }
                 commit('ADD_BULLET', bullet)
-
+                
                 setTimeout(() => {
                     commit('REMOVE_BULLET', bulletId)
                 }, 2500);
@@ -90,12 +90,12 @@ let lastTime = 0
 const loop = time => {
     let delta = ((time - lastTime) * .01) || .16
     lastTime = time
-
+    
     input(store)
     fysik(delta)
     draw(canvas, context)
     gc()
-
+    
     requestAnimationFrame(loop)
 }
 loop()
@@ -106,7 +106,7 @@ function draw(canvas, context) {
     for (let player of players) {
         drawPlayer(context, player)
     }
-
+    
     for (let bulletId of Object.keys(store.state.bullets)) {
         let bullet = store.state.bullets[bulletId]
         drawBullet(context, bullet)
@@ -127,6 +127,7 @@ let constants = {
     bulletSpeed: 50,
     timeToShoot: 0.5
 }
+
 function fysik(delta) {
     for (let playerId of Object.keys(store.state.playersById)) {
         let player = store.state.playersById[playerId]
@@ -157,10 +158,10 @@ function fysik(delta) {
                 id: clientId,
                 shooting: player.shooting
             })
-
+            
         }
     }
-
+    
     for (let bulletId of Object.keys(store.state.bullets)) {
         let bullet = store.state.bullets[bulletId]
         localStore.commit('SET_BULLET_POS', {
