@@ -41,5 +41,5 @@ function scangamepads() {
 }
 
 if (!haveEvents) {
-    setInterval(scangamepads, 500);
+    setInterval(scangamepads, 10);
 }
