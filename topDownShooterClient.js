@@ -51,7 +51,7 @@ let localStore = Store({
                     id: bulletId, x: playerPos.x, y: playerPos.y, direction
                 }
                 commit('ADD_BULLET', bullet)
-                
+
                 setTimeout(() => {
                     commit('REMOVE_BULLET', bulletId)
                 }, 2500);
@@ -84,12 +84,12 @@ let lastTime = 0
 const loop = time => {
     let delta = ((time - lastTime) * .01) || .16
     lastTime = time
-    
+
     input(store)
     fysik(delta)
     draw(canvas, context)
     gc()
-    
+
     requestAnimationFrame(loop)
 }
 loop()
@@ -100,7 +100,7 @@ function draw(canvas, context) {
     for (let player of players) {
         drawPlayer(context, player)
     }
-    
+
     for (let bulletId of Object.keys(store.state.bullets)) {
         let bullet = store.state.bullets[bulletId]
         drawBullet(context, bullet)
@@ -117,6 +117,10 @@ function drawBullet(context, bullet) {
     context.fillRect(bullet.x, bullet.y, 5, 5);
 }
 
+let constants = {
+    bulletSpeed: 50,
+    timeToShoot: 0.5
+}
 function fysik(delta) {
     for (let playerId of Object.keys(store.state.playersById)) {
         let player = store.state.playersById[playerId]
@@ -129,23 +133,34 @@ function fysik(delta) {
             y += player.speed * delta * player.moving.y
         }
         localStore.commit('SET_PLAYER_POS', {id: playerId, x, y})
-        
+
         if (player.shooting) {
-            console.log('player.shooting', player.shooting)
-            localStore.dispatch('firePlayerWeapon', {
-                id: playerId,
-                direction: player.shooting,
-            });
+            if(!player.shooting.timeToShoot){
+                player.shooting.timeToShoot = constants.timeToShoot
+            }
+            player.shooting.timeToShoot -= delta;
+            if(player.shooting.timeToShoot <= 0){
+                let overFlow = -player.shooting.timeToShoot;
+                player.shooting.timeToShoot = constants.timeToShoot - overFlow;
+                localStore.dispatch('firePlayerWeapon', {
+                    id: playerId,
+                    direction: player.shooting,
+                });
+            }
+            store.commit('SET_PLAYER_SHOOTING', {
+                id: clientId,
+                shooting: player.shooting
+            })
+
         }
     }
-    
+
     for (let bulletId of Object.keys(store.state.bullets)) {
         let bullet = store.state.bullets[bulletId]
-        let bulletSpeed = 50
         localStore.commit('SET_BULLET_POS', {
             id: bulletId,
-            x: bullet.x + bullet.direction.x * bulletSpeed * delta,
-            y: bullet.y + bullet.direction.y * bulletSpeed * delta,
+            x: bullet.x + bullet.direction.x * constants.bulletSpeed * delta,
+            y: bullet.y + bullet.direction.y * constants.bulletSpeed * delta,
         })
     }
 }
