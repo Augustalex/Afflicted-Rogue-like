@@ -16,48 +16,48 @@ let localStore = Store({
         },
         getters: {},
         mutations: {
-            SET_PLAYER_POS({state}, {id, x, y}) {
+            SET_PLAYER_POS({ state }, { id, x, y }) {
                 if (!state.playersById[id]) {
                     throw new Error('Player for id does not exist!');
                 }
                 state.playersById[id].x = x
                 state.playersById[id].y = y
             },
-            SET_PLAYER_MOVING({state}, {id, moving}) {
+            SET_PLAYER_MOVING({ state }, { id, moving }) {
                 state.playersById[id].moving = moving
             },
-            SET_PLAYER_SHOOTING({state}, {id, shooting}) {
+            SET_PLAYER_SHOOTING({ state }, { id, shooting }) {
                 state.playersById[id].shooting = shooting
             },
-            SET_PLAYER_SHOOTING_DIRECTION({state}, {id, direction}) {
+            SET_PLAYER_SHOOTING_DIRECTION({ state }, { id, direction }) {
                 state.playersById[id].shooting.direction = direction
             },
-            MERGE_PLAYER_SHOOTING({state}, {id, shooting}) {
+            MERGE_PLAYER_SHOOTING({ state }, { id, shooting }) {
                 Object.assign(state.playersById[id].shooting, shooting)
             },
-            ADD_PLAYER({state}, player) {
+            ADD_PLAYER({ state }, player) {
                 state.playersById[player.id] = player
             },
-            ADD_BULLET({state}, bullet) {
+            ADD_BULLET({ state }, bullet) {
                 state.bullets[bullet.id] = bullet
             },
-            SET_BULLET_POS({state}, {id, x, y}) {
+            SET_BULLET_POS({ state }, { id, x, y }) {
                 state.bullets[id].x = x
                 state.bullets[id].y = y
             },
-            REMOVE_BULLET({state}, bulletId) {
+            REMOVE_BULLET({ state }, bulletId) {
                 state.bullets[bulletId]._remove = true
             }
         },
         actions: {
-            firePlayerWeapon({state, commit}, {id, direction}) {
+            firePlayerWeapon({ state, commit }, { id, direction }) {
                 let playerPos = state.playersById[id]
                 let bulletId = genId()
                 let bullet = {
                     id: bulletId, x: playerPos.x, y: playerPos.y, direction
                 }
                 commit('ADD_BULLET', bullet)
-                
+
                 setTimeout(() => {
                     commit('REMOVE_BULLET', bulletId)
                 }, 2500);
@@ -75,7 +75,17 @@ store.commit('ADD_PLAYER', {
     x: rand255(),
     y: rand255(),
     color,
-    speed: 20
+    speed: 20,
+    shooting: {
+        direction: {
+            x: 0,
+            y: 0
+        }
+    },
+    moving: {
+        x: 0,
+        y: 0
+    }
 });
 
 let canvas = document.createElement('canvas')
@@ -90,12 +100,12 @@ let lastTime = 0
 const loop = time => {
     let delta = ((time - lastTime) * .01) || .16
     lastTime = time
-    
+
     input(store)
     fysik(delta)
     draw(canvas, context)
     gc()
-    
+
     requestAnimationFrame(loop)
 }
 loop()
@@ -106,14 +116,14 @@ function draw(canvas, context) {
     for (let player of players) {
         drawPlayer(context, player)
     }
-    
+
     for (let bulletId of Object.keys(store.state.bullets)) {
         let bullet = store.state.bullets[bulletId]
         drawBullet(context, bullet)
     }
 }
 
-function drawPlayer(context, {x, y, color}) {
+function drawPlayer(context, { x, y, color }) {
     context.fillStyle = color
     context.fillRect(x, y, 10, 10);
 }
@@ -139,29 +149,31 @@ function fysik(delta) {
         if (player.moving && player.moving.y) {
             y += player.speed * delta * player.moving.y
         }
-        localStore.commit('SET_PLAYER_POS', {id: playerId, x, y})
-        
-        if (player.shooting && (player.shooting.x || player.shooting.y)) {
+        localStore.commit('SET_PLAYER_POS', { id: playerId, x, y })
+
+        if (player.shooting.direction.x || player.shooting.direction.y) {
             if (!player.shooting.timeToShoot) {
                 player.shooting.timeToShoot = constants.timeToShoot
             }
-            player.shooting.timeToShoot -= delta;
-            if (player.shooting.timeToShoot <= 0) {
-                let overFlow = -player.shooting.timeToShoot;
-                player.shooting.timeToShoot = constants.timeToShoot - overFlow;
+            let newTimeToShoot = player.shooting.timeToShoot - delta;
+            if (newTimeToShoot <= 0) {
+                let overFlow = -newTimeToShoot;
+                newTimeToShoot = constants.timeToShoot - overFlow;
                 localStore.dispatch('firePlayerWeapon', {
                     id: playerId,
-                    direction: player.shooting,
+                    direction: player.shooting.direction,
                 });
             }
-            store.commit('SET_PLAYER_SHOOTING', {
+            localStore.commit('MERGE_PLAYER_SHOOTING', {
                 id: clientId,
-                shooting: player.shooting
+                shooting: {
+                    timeToShoot: newTimeToShoot
+                }
             })
-            
+
         }
     }
-    
+
     for (let bulletId of Object.keys(store.state.bullets)) {
         let bullet = store.state.bullets[bulletId]
         localStore.commit('SET_BULLET_POS', {
