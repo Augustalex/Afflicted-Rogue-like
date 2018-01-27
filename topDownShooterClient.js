@@ -3,6 +3,7 @@ let socket = io.connect('http://127.0.0.1:3032');
 let Store = require('./Store.js')
 let StoreProxy = require('./StoreProxy.js')
 const input = require('./input.js');
+const fysik = require('./fysik.js');
 const rand255 = () => Math.round(Math.random() * 255)
 const genId = () => `${rand255()}${rand255()}${rand255()}`
 const color = `rgb(${rand255()},${rand255()},${rand255()})`
@@ -131,57 +132,6 @@ function drawPlayer(context, { x, y, color }) {
 function drawBullet(context, bullet) {
     context.fillStyle = 'black'
     context.fillRect(bullet.x, bullet.y, 5, 5);
-}
-
-let constants = {
-    bulletSpeed: 50,
-    timeToShoot: 0.5
-}
-
-function fysik(delta) {
-    for (let playerId of Object.keys(store.state.playersById)) {
-        let player = store.state.playersById[playerId]
-        let x = player.x
-        let y = player.y
-        if (player.moving && player.moving.x) {
-            x += player.speed * delta * player.moving.x
-        }
-        if (player.moving && player.moving.y) {
-            y += player.speed * delta * player.moving.y
-        }
-        localStore.commit('SET_PLAYER_POS', { id: playerId, x, y })
-
-        if (player.shooting.direction.x || player.shooting.direction.y) {
-            if (!player.shooting.timeToShoot) {
-                player.shooting.timeToShoot = constants.timeToShoot
-            }
-            let newTimeToShoot = player.shooting.timeToShoot - delta;
-            if (newTimeToShoot <= 0) {
-                let overFlow = -newTimeToShoot;
-                newTimeToShoot = constants.timeToShoot - overFlow;
-                localStore.dispatch('firePlayerWeapon', {
-                    id: playerId,
-                    direction: player.shooting.direction,
-                });
-            }
-            localStore.commit('MERGE_PLAYER_SHOOTING', {
-                id: clientId,
-                shooting: {
-                    timeToShoot: newTimeToShoot
-                }
-            })
-
-        }
-    }
-
-    for (let bulletId of Object.keys(store.state.bullets)) {
-        let bullet = store.state.bullets[bulletId]
-        localStore.commit('SET_BULLET_POS', {
-            id: bulletId,
-            x: bullet.x + bullet.direction.x * constants.bulletSpeed * delta,
-            y: bullet.y + bullet.direction.y * constants.bulletSpeed * delta,
-        })
-    }
 }
 
 function gc() {
