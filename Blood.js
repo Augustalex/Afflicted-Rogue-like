@@ -44,8 +44,18 @@ module.exports = function (originalCanvas, originalContext) {
     }
 
     return {
+        addTrail(x, y, size = 1) {
+            for (let i = 0; i < 12; i++) {
+                particles.push({
+                    x,
+                    y,
+                    angle: i,
+                    size: 1 + size * Math.random()
+                });
+            }
+        },
         add(x, y) {
-            for (var i = 0; i < 36 * 2; i++) {
+            for (let i = 0; i < 36 * 2; i++) {
                 particles.push({
                     x,
                     y,

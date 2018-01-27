@@ -7,7 +7,7 @@
 
     const playerObjectsById = {}
 
-    module.exports = function fysik(localStore, store, delta, newOptions) {
+    module.exports = function fysik(localStore, store, delta) {
         for (let playerId of Object.keys(store.state.playersById)) {
             player = playerObjectsById[playerId]
             if (!playerObjectsById[playerId]) {
@@ -42,7 +42,7 @@
                 })
                 if (intersects) {
                     localStore.commit('REMOVE_BULLET', bulletId)
-                    store.commit('REMOVE_PLAYER', collidable.id)
+                    store.dispatch('killPlayer', collidable.id)
                 }
             }
 
@@ -79,6 +79,9 @@
                 currentPosition.x = x
                 currentPosition.y = y
                 localStore.commit('SET_PLAYER_POS', { id: playerId, x, y })
+                if (Math.random() < .1 * delta) {
+                    store.dispatch('addBloodTrail', playerId)
+                }
 
                 if (player.shooting.direction.x || player.shooting.direction.y) {
                     if (!player.shooting.timeToShoot) {

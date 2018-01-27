@@ -13,9 +13,30 @@
     const clientId = `${rand255()}${rand255()}`
     console.log('clientId: ', clientId)
 
+    const createOwnPlayer = () => {
+        return {
+            id: clientId,
+            x: rand255(),
+            y: rand255(),
+            color,
+            speed: 20,
+            shooting: {
+                direction: {
+                    x: 0,
+                    y: 0
+                }
+            },
+            moving: {
+                x: 0,
+                y: 0
+            }
+        }
+    }
+
     let localStore = Store({
         store: {
             state: {
+                localPlayerDead: true,
                 playersById: {},
                 bullets: {},
                 removeRequests: [],
@@ -50,6 +71,10 @@
                 },
                 ADD_PLAYER({ state }, player) {
                     state.playersById[player.id] = player
+                    if (player.id === clientId) {
+                        console.log('ADDING LOCAL PLAYER')
+                        state.localPlayerDead = false
+                    }
                 },
                 ADD_BULLET({ state }, bullet) {
                     state.bullets[bullet.id] = bullet
@@ -58,14 +83,18 @@
                     state.bullets[id].x = x
                     state.bullets[id].y = y
                 },
-                REMOVE_PLAYER({ state, commit }, playerId) {
+                REMOVE_PLAYER({ state }, playerId) {
                     if (state.playersById[playerId]) {
-                        let { x, y } = state.playersById[playerId]
                         state.removeRequests.push({
                             firstKey: 'playersById',
-                            secondKey: playerId
+                            secondKey: playerId,
+                            callback: () => {
+                                if (playerId === clientId) {
+                                    console.log('REMOVED LOCAL PLAYER')
+                                    state.localPlayerDead = true
+                                }
+                            }
                         })
-                        commit('ADD_BLOOD', { x, y })
                     }
                 },
                 REMOVE_BULLET({ state }, bulletId) {
@@ -86,6 +115,33 @@
                 }
             },
             actions: {
+                addBloodTrail({ state }, playerId) {
+                    let { x, y } = state.playersById[playerId]
+                    state.blood.addTrail(x, y)
+
+                    const bleed = (time, size) => {
+                        setTimeout(() => {
+                            if (!state.playersById[playerId]) return;
+                            let { x, y } = state.playersById[playerId]
+                            state.blood.addTrail(x, y, size)
+                        }, time)
+                    }
+                    bleed(20, 2)
+                    bleed(30, 1.8)
+                    bleed(40, 1.6)
+                    bleed(50, 1.2)
+                    bleed(90, 1)
+                    bleed(120, 1)
+                    bleed(200, 1)
+                    bleed(300, 1)
+                },
+                killPlayer({ state, commit }, playerId) {
+                    if (state.playersById[playerId]) {
+                        let { x, y } = state.playersById[playerId]
+                        commit('REMOVE_PLAYER', playerId)
+                        commit('ADD_BLOOD', { x, y })
+                    }
+                },
                 firePlayerWeapon({ state, commit }, { id, direction }) {
                     let player = state.playersById[id]
                     let bulletId = genId()
@@ -114,23 +170,7 @@
         socket,
         store: localStore
     })
-    store.commit('ADD_PLAYER', {
-        id: clientId,
-        x: rand255(),
-        y: rand255(),
-        color,
-        speed: 20,
-        shooting: {
-            direction: {
-                x: 0,
-                y: 0
-            }
-        },
-        moving: {
-            x: 0,
-            y: 0
-        }
-    });
+    store.commit('ADD_PLAYER', createOwnPlayer());
 
     let canvas = document.createElement('canvas')
     canvas.width = 768;
@@ -144,6 +184,7 @@
     var myImage = new Image();
     myImage.src = './sprites/back.png';
 
+    let respawning = false
     let lastTime = 0
     const loop = time => {
         let delta = ((time - lastTime) * .01) || .16
@@ -153,6 +194,16 @@
         fysik(localStore, store, delta)
         draw(canvas, context)
         gc()
+
+        if (!respawning && store.state.localPlayerDead) {
+            respawning = true
+            console.log('RESPAWN IN 3 SECONDS')
+            setTimeout(() => {
+                let player = createOwnPlayer()
+                store.commit('ADD_PLAYER', player);
+                respawning = false
+            }, 3000);
+        }
 
         requestAnimationFrame(loop)
     }
@@ -207,12 +258,15 @@
     }
 
     function gc() {
-        for (let { firstKey, secondKey } of store.state.removeRequests) {
+        for (let { firstKey, secondKey, callback } of store.state.removeRequests) {
             if (secondKey) {
                 delete store.state[firstKey][secondKey]
             }
             else {
                 delete store.state[firstKey]
+            }
+            if (callback) {
+                callback()
             }
         }
         store.state.removeRequests = []
