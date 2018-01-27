@@ -2,6 +2,7 @@ let io = require('socket.io-client')
 let socket = io.connect('http://127.0.0.1:3032');
 let Store = require('./Store.js')
 let StoreProxy = require('./StoreProxy.js')
+const gamepadController = require('./gamepadController.js')
 const rand255 = () => Math.round(Math.random() * 255)
 const genId = () => `${rand255()}${rand255()}${rand255()}`
 const color = `rgb(${rand255()},${rand255()},${rand255()})`
