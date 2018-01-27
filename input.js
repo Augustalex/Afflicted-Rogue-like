@@ -39,6 +39,8 @@
         readGamepadState()
         
         let player = store.state.playersById[clientId]
+        if (!player) return
+        
         let movingX = player.moving ? player.moving.x : 0
         let movingY = player.moving ? player.moving.y : 0
         if (wasPressed('right')) {

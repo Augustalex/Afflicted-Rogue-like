@@ -9,12 +9,14 @@
     const genId = () => `${rand255()}${rand255()}${rand255()}`
     const color = `rgb(${rand255()},${rand255()},${rand255()})`
     const clientId = `${rand255()}${rand255()}`
+    console.log('clientId: ', clientId)
     
     let localStore = Store({
         store: {
             state: {
                 playersById: {},
-                bullets: []
+                bullets: {},
+                removeRequests: []
             },
             getters: {},
             mutations: {
@@ -47,8 +49,21 @@
                     state.bullets[id].x = x
                     state.bullets[id].y = y
                 },
+                REMOVE_PLAYER({state}, playerId) {
+                    if (state.playersById[playerId]) {
+                        state.removeRequests.push({
+                            firstKey: 'playersById',
+                            secondKey: playerId
+                        })
+                    }
+                },
                 REMOVE_BULLET({state}, bulletId) {
-                    state.bullets[bulletId]._remove = true
+                    if (state.bullets[bulletId]) {
+                        state.removeRequests.push({
+                            firstKey: 'bullets',
+                            secondKey: bulletId
+                        })
+                    }
                 }
             },
             actions: {
@@ -56,11 +71,16 @@
                     let playerPos = state.playersById[id]
                     let bulletId = genId()
                     let bullet = {
-                        id: bulletId, x: playerPos.x, y: playerPos.y, direction
+                        id: bulletId,
+                        shooterId: id,
+                        x: playerPos.x,
+                        y: playerPos.y,
+                        direction
                     }
                     commit('ADD_BULLET', bullet)
                     
                     setTimeout(() => {
+                        if (!state.bullets[bulletId]) return;
                         commit('REMOVE_BULLET', bulletId)
                     }, 2500);
                 }
@@ -136,13 +156,14 @@
     }
     
     function gc() {
-        let bulletIds = Object.keys(store.state.bullets)
-        for (let bulletId of bulletIds) {
-            let bullet = store.state.bullets[bulletId]
-            if (bullet._remove) {
-                store.state.bullets[bulletId] = null
-                delete store.state.bullets[bulletId]
+        for (let {firstKey, secondKey} of store.state.removeRequests) {
+            if (secondKey) {
+                delete store.state[firstKey][secondKey]
+            }
+            else {
+                delete store.state[firstKey]
             }
         }
+        store.state.removeRequests = []
     }
 })()
