@@ -156,9 +156,9 @@ module.exports = function input(store) {
     let playerShooting = player.shooting || {x: 0, y: 0}
     let updatedVector = getUpdatedVector(['shootUp', 'shootDown', 'shootLeft', 'shootRight'], playerShooting)
     if (updatedVector.x !== playerShooting.x || updatedVector.y !== playerShooting.y) {
-        store.commit('SET_PLAYER_SHOOTING', {
+        store.commit('SET_PLAYER_SHOOTING_DIRECTION', {
             id: clientId,
-            shooting: updatedVector
+            direction: updatedVector
         })
     }
 }

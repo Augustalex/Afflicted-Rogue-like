@@ -29,6 +29,12 @@ let localStore = Store({
             SET_PLAYER_SHOOTING({state}, {id, shooting}) {
                 state.playersById[id].shooting = shooting
             },
+            SET_PLAYER_SHOOTING_DIRECTION({state}, {id, direction}) {
+                state.playersById[id].shooting.direction = direction
+            },
+            MERGE_PLAYER_SHOOTING({state}, {id, shooting}) {
+                Object.assign(state.playersById[id].shooting, shooting)
+            },
             ADD_PLAYER({state}, player) {
                 state.playersById[player.id] = player
             },
@@ -133,13 +139,13 @@ function fysik(delta) {
             y += player.speed * delta * player.moving.y
         }
         localStore.commit('SET_PLAYER_POS', {id: playerId, x, y})
-
-        if (player.shooting) {
-            if(!player.shooting.timeToShoot){
+        
+        if (player.shooting && (player.shooting.x || player.shooting.y)) {
+            if (!player.shooting.timeToShoot) {
                 player.shooting.timeToShoot = constants.timeToShoot
             }
             player.shooting.timeToShoot -= delta;
-            if(player.shooting.timeToShoot <= 0){
+            if (player.shooting.timeToShoot <= 0) {
                 let overFlow = -player.shooting.timeToShoot;
                 player.shooting.timeToShoot = constants.timeToShoot - overFlow;
                 localStore.dispatch('firePlayerWeapon', {
