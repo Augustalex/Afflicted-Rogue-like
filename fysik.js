@@ -3,8 +3,8 @@
         bulletSpeed: 50,
         timeToShoot: 0.5
     }
-
-    module.exports = function fysik(delta) {
+    
+    module.exports = function fysik(localStore, store, delta) {
         for (let playerId of Object.keys(store.state.playersById)) {
             let player = store.state.playersById[playerId]
             let x = player.x
@@ -15,8 +15,8 @@
             if (player.moving && player.moving.y) {
                 y += player.speed * delta * player.moving.y
             }
-            localStore.commit('SET_PLAYER_POS', { id: playerId, x, y })
-
+            localStore.commit('SET_PLAYER_POS', {id: playerId, x, y})
+            
             if (player.shooting.direction.x || player.shooting.direction.y) {
                 if (!player.shooting.timeToShoot) {
                     player.shooting.timeToShoot = constants.timeToShoot
@@ -36,10 +36,10 @@
                         timeToShoot: newTimeToShoot
                     }
                 })
-
+                
             }
         }
-
+        
         for (let bulletId of Object.keys(store.state.bullets)) {
             let bullet = store.state.bullets[bulletId]
             localStore.commit('SET_BULLET_POS', {
