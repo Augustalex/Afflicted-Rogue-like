@@ -260,6 +260,13 @@
         if (vignetteImage.complete) {
             context.drawImage(vignetteImage, 0, 0, canvas.width, canvas.height)
         }
+
+        context.filter = "brightness(" + 1 + ") blur(" + 15 + "px)";
+        context.globalCompositeOperation = "lighten";
+        context.globalAlpha = 0.5;
+        context.drawImage(canvas, 0, 0);
+        context.filter = "none";
+        context.globalCompositeOperation = "source-over";
     }
 
     function drawPlayer(context, { x, y, color, moving, shooting }) {
@@ -277,7 +284,7 @@
     }
 
     function drawBullet(context, bullet) {
-        context.fillStyle = 'black'
+        context.fillStyle = 'yellow'
         let dir = Math.atan2(bullet.direction.y, bullet.direction.x);
         fillRectRot(bullet.x, bullet.y, 5, 5, dir)
     }
