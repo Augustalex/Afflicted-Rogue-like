@@ -1,6 +1,6 @@
 (function () {
     let constants = {
-        bulletSpeed: 50,
+        bulletSpeed: 100,
         timeToShoot: 0.5,
         playerSize: 10
     }

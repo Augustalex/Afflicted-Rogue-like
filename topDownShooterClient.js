@@ -174,15 +174,23 @@
                 firePlayerWeapon({ state, commit }, { id, direction }) {
                     let player = state.playersById[id]
                     let bulletId = genId()
+                    let directionRad = Math.atan2(direction.y, direction.x)
+                    let newDirectionRad = directionRad + (Math.random() * .05) - .025
+                    let newDirectionX = Math.cos(newDirectionRad)
+                    let newDirectionY = Math.sin(newDirectionRad)
                     let shootDir = Math.atan2(player.shooting.direction.y, player.shooting.direction.x)
                     let gunPosX = player.x + Math.cos(shootDir + Math.PI / 4) * 9
                     let gunPosY = player.y + Math.sin(shootDir + Math.PI / 4) * 9
+
                     let bullet = {
                         x: gunPosX,
                         y: gunPosY,
                         id: bulletId,
                         shooterId: id,
-                        direction
+                        direction: {
+                            x: newDirectionX,
+                            y: newDirectionY
+                        }
                     }
                     commit('ADD_BULLET', bullet)
 
@@ -292,7 +300,7 @@
     function drawBullet(context, bullet, color) {
         context.fillStyle = color
         let dir = Math.atan2(bullet.direction.y, bullet.direction.x);
-        fillRectRot(bullet.x, bullet.y, 5, 5, dir)
+        fillRectRot(bullet.x, bullet.y, 12, 3, dir)
     }
 
     function fillRectRot(x, y, width, height, dir) {

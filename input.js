@@ -1,4 +1,7 @@
 (function () {
+    //TODO make public constant in a players class
+    const runningSpeed = 2
+
     const gamepadController = require('./gamepadController.js')
     const rightStickRight = 'rs:x:1'
     const rightStickLeft = 'rs:x:0'
@@ -8,22 +11,25 @@
     const leftStickLeft = 'ls:x:0'
     const leftStickDown = 'ls:y:1'
     const leftStickUp = 'ls:y:0'
+    const buttonA = 'button:a'
 
     const keymap = {
         up: ['w', leftStickUp],
         down: ['s', leftStickDown],
         left: ['a', leftStickLeft],
         right: ['d', leftStickRight],
-        shootUp: ['ArrowUp', rightStickUp],
-        shootDown: ['ArrowDown', rightStickDown],
-        shootLeft: ['ArrowLeft', rightStickLeft],
-        shootRight: ['ArrowRight', rightStickRight],
+        shootUp: ['arrowup', rightStickUp],
+        shootDown: ['arrowdown', rightStickDown],
+        shootLeft: ['arrowleft', rightStickLeft],
+        shootRight: ['arrowright', rightStickRight],
+        run: ['shift', buttonA]
     }
 
+    let actionKeysActive = new Set();
     let previousKeysDown = new Set();
-    let keysDown = new Set();
-    const wasReleased = (actionKey) => keymap[actionKey].some(key => previousKeysDown.has(key) && !keysDown.has(key))
-    const wasPressed = (actionKey) => keymap[actionKey].some(key => !previousKeysDown.has(key) && keysDown.has(key))
+    let newKeysDown = new Set();
+    const wasReleased = (actionKey) => keymap[actionKey].some(key => previousKeysDown.has(key) && !newKeysDown.has(key))
+    const wasPressed = (actionKey) => keymap[actionKey].some(key => !previousKeysDown.has(key) && newKeysDown.has(key))
     const anyPressed = (actionKeys) => actionKeys.some(key => wasPressed(key))
 
     let keyboardState = new Set();
@@ -33,10 +39,17 @@
 // const isActionKeyDown = actionKey => keymap[actionKey].some(k => keysDown.has(k))
 // const matchesActionKey = (actionKey, key) => keymap[actionKey].some(k => k === key)
     module.exports = function input(store, clientId) {
-        previousKeysDown = keysDown
-        keysDown = new Set()
+        previousKeysDown = newKeysDown
+        newKeysDown = new Set()
         readKeyboardState()
         readGamepadState()
+
+        if (wasPressed('run')) {
+            actionKeysActive.add('run')
+        }
+        if (wasReleased('run')) {
+            actionKeysActive.delete('run')
+        }
 
         let player = store.state.playersById[clientId]
         if (!player) return
@@ -55,12 +68,28 @@
         if (wasPressed('up')) {
             movingY = -1
         }
-        if (movingX !== player.moving.x || movingY !== player.moving.y) {
+
+        let runningChanged = false
+        if (wasPressed('run')) {
+            runningChanged = true
+            actionKeysActive.add('run')
+        }
+        if (wasReleased('run')) {
+            runningChanged = true
+            actionKeysActive.delete('run')
+        }
+
+        if (movingX !== player.moving.x || movingY !== player.moving.y || (runningChanged && (player.moving.x > 0 || player.moving.y > 0))) {
+            let running = actionKeysActive.has('run')
+
+            let c = Math.sqrt(movingX * movingX + movingY * movingY)
+            movingX /= c
+            movingY /= c
             store.commit('SET_PLAYER_MOVING', {
                 id: clientId,
                 moving: {
-                    x: movingX,
-                    y: movingY
+                    x: running ? movingX * runningSpeed : movingX,
+                    y: running ? movingY * runningSpeed : movingY
                 }
             })
         }
@@ -139,7 +168,7 @@
 
     function readKeyboardState() {
         for (let key of [...keyboardState]) {
-            keysDown.add(key)
+            newKeysDown.add(key)
         }
     }
 
@@ -164,21 +193,21 @@
 
         const stick = (stick, up, down, left, right) => {
             if (Math.abs(stick.x) > stickThreshold) {
-                keysDown.delete(stick.x > 0 ? left : right)
-                keysDown.add(stick.x > 0 ? right : left)
+                newKeysDown.delete(stick.x > 0 ? left : right)
+                newKeysDown.add(stick.x > 0 ? right : left)
             }
             else {
-                keysDown.delete(left)
-                keysDown.delete(right)
+                newKeysDown.delete(left)
+                newKeysDown.delete(right)
             }
 
             if (Math.abs(stick.y) > stickThreshold) {
-                keysDown.delete(stick.y > 0 ? up : down)
-                keysDown.add(stick.y > 0 ? down : up)
+                newKeysDown.delete(stick.y > 0 ? up : down)
+                newKeysDown.add(stick.y > 0 ? down : up)
             }
             else {
-                keysDown.delete(up)
-                keysDown.delete(down)
+                newKeysDown.delete(up)
+                newKeysDown.delete(down)
             }
         }
 
@@ -188,11 +217,11 @@
 
     window.addEventListener('keydown', e => {
         //TODO Keydown seems to be called repeatably when pressing down a key, why?
-        if (keyboardState.has(e.key)) return
-        keyboardState.add(e.key)
+        // if (keyboardState.has(e.key.toLowerCase())) return
+        keyboardState.add(e.key.toLowerCase())
     })
 
     window.addEventListener('keyup', e => {
-        keyboardState.delete(e.key)
+        keyboardState.delete(e.key.toLowerCase())
     })
 })()
