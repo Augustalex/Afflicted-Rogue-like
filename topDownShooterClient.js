@@ -7,6 +7,7 @@
     let StoreProxy = require('./StoreProxy.js')
     const input = require('./input.js');
     const fysik = require('./fysik.js');
+    const draw = require('./draw.js');
     const rand255 = () => Math.round(Math.random() * 255)
     const rHue = () => Math.round(Math.random() * 360)
     const genId = () => `${rand255()}${rand255()}${rand255()}`
@@ -205,7 +206,7 @@
                         let { x, y } = state.bullets[bulletId]
                         commit('REMOVE_BULLET', bulletId)
                         commit('ADD_BURN', { x, y })
-                    }, Math.round(Math.random() * 200) + 500);
+                    }, Math.round(Math.random() * 200) + 5000);
                 }
             }
         }
@@ -225,15 +226,6 @@
     document.body.appendChild(canvas)
     let context = canvas.getContext('2d')
     localStore.commit('SET_BLOOD_ENGINE', Blood(canvas, context));
-    var backgroundImage = new Image();
-    backgroundImage.src = './sprites/back.png';
-    var vignetteImage = new Image();
-    vignetteImage.src = './sprites/vignette.png';
-
-    let colorByShooterId = {}
-    setInterval(() => {
-        colorByShooterId = {}
-    }, 30000)
 
     let respawning = false
     let lastTime = 0
@@ -243,7 +235,7 @@
 
         input(store, clientId)
         fysik(localStore, store, delta)
-        draw(canvas, context)
+        draw(canvas, context, store, localStore, clientId)
         gc()
 
         if (!respawning && store.state.localPlayerDead) {
@@ -259,68 +251,6 @@
         requestAnimationFrame(loop)
     }
     loop()
-
-    function draw(canvas, context) {
-        context.clearRect(0, 0, canvas.width, canvas.height)
-        if (backgroundImage.complete) {
-            context.globalAlpha = 1;
-            context.drawImage(backgroundImage, 0, 0, canvas.width, canvas.height)
-            context.globalAlpha = 0.5;
-            context.fillStyle = "black";
-            context.fillRect(0, 0, canvas.width, canvas.height);
-            context.globalAlpha = 1;
-        }
-        store.state.blood.animateAndDraw()
-
-        let players = Object.keys(store.state.playersById).map(key => store.state.playersById[key])
-        for (let player of players) {
-            drawPlayer(context, player)
-            colorByShooterId[player.id] = player.color
-        }
-
-        for (let bulletId of Object.keys(store.state.bullets)) {
-            let bullet = store.state.bullets[bulletId]
-            drawBullet(context, bullet, colorByShooterId[bullet.shooterId])
-        }
-        if (vignetteImage.complete) {
-            context.drawImage(vignetteImage, 0, 0, canvas.width, canvas.height)
-        }
-
-        context.filter = "brightness(" + 1 + ") blur(" + 15 + "px)";
-        context.globalCompositeOperation = "lighten";
-        context.globalAlpha = 0.5;
-        context.drawImage(canvas, 0, 0);
-        context.filter = "none";
-        context.globalCompositeOperation = "source-over";
-    }
-
-    function drawPlayer(context, { x, y, color, moving, shooting }) {
-        context.fillStyle = color
-        let aimVector = moving;
-        if (shooting.direction.x || shooting.direction.y) {
-            aimVector = shooting.direction
-        }
-        let dir = Math.atan2(aimVector.y, aimVector.x)
-        fillRectRot(x, y, 10, 10, dir)
-        context.fillStyle = 'black'
-        let gunPosX = x + Math.cos(dir + Math.PI / 4) * 9
-        let gunPosY = y + Math.sin(dir + Math.PI / 4) * 9
-        fillRectRot(gunPosX, gunPosY, 8, 3, dir)
-    }
-
-    function drawBullet(context, bullet, color) {
-        context.fillStyle = color
-        let dir = Math.atan2(bullet.direction.y, bullet.direction.x);
-        fillRectRot(bullet.x, bullet.y, 12, 3, dir)
-    }
-
-    function fillRectRot(x, y, width, height, dir) {
-        context.save()
-        context.translate(x, y)
-        context.rotate(dir)
-        context.fillRect(-width / 2, -height / 2, width, height)
-        context.restore()
-    }
 
     function gc() {
         for (let { firstKey, secondKey, callback } of store.state.removeRequests) {

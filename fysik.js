@@ -1,11 +1,14 @@
 (function () {
     let constants = {
-        bulletSpeed: 100,
-        timeToShoot: 0.5,
+        bulletSpeed: 50,
+        timeToShoot: .5,
         playerSize: 10
     }
 
-    const playerObjectsById = {}
+    let playerObjectsById = {}
+    setInterval(() => {
+        playerObjectsById = {}
+    }, Math.round(Math.random() * 5000) + 5000)
 
     module.exports = function fysik(localStore, store, delta) {
         for (let playerId of Object.keys(store.state.playersById)) {
