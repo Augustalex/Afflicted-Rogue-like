@@ -1,15 +1,16 @@
 (function () {
     let Blood = require('./Blood.js')
     let io = require('socket.io-client')
-    let socket = io.connect('http://127.0.0.1:3032');
-    //let socket = io.connect('http://192.168.1.106:3032');
+    //let socket = io.connect('http://127.0.0.1:3032');
+    let socket = io.connect('http://192.168.1.106:3032');
     let Store = require('./Store.js')
     let StoreProxy = require('./StoreProxy.js')
     const input = require('./input.js');
     const fysik = require('./fysik.js');
     const rand255 = () => Math.round(Math.random() * 255)
+    const rHue = () => Math.round(Math.random() * 360)
     const genId = () => `${rand255()}${rand255()}${rand255()}`
-    const color = `rgb(${rand255()},${rand255()},${rand255()})`
+    const color = `hsl(${rHue()},100%,80%)`
     const clientId = `${rand255()}${rand255()}`
     console.log('clientId: ', clientId)
 
@@ -255,8 +256,11 @@
     function draw(canvas, context) {
         context.clearRect(0, 0, canvas.width, canvas.height)
         if (backgroundImage.complete) {
-            context.globalAlpha = 0.8;
+            context.globalAlpha = 1;
             context.drawImage(backgroundImage, 0, 0, canvas.width, canvas.height)
+            context.globalAlpha = 0.5;
+            context.fillStyle="black";
+            context.fillRect(0,0, canvas.width, canvas.height);
             context.globalAlpha = 1;
         }
         store.state.blood.animateAndDraw()
@@ -275,12 +279,12 @@
             context.drawImage(vignetteImage, 0, 0, canvas.width, canvas.height)
         }
 
-        context.filter = "brightness(" + 1 + ") blur(" + 15 + "px)";
-        context.globalCompositeOperation = "lighten";
-        context.globalAlpha = 0.5;
-        context.drawImage(canvas, 0, 0);
-        context.filter = "none";
-        context.globalCompositeOperation = "source-over";
+         context.filter = "brightness(" + 1 + ") blur(" + 15 + "px)";
+         context.globalCompositeOperation = "lighten";
+         context.globalAlpha = 0.5;
+         context.drawImage(canvas, 0, 0);
+         context.filter = "none";
+         context.globalCompositeOperation = "source-over";
     }
 
     function drawPlayer(context, { x, y, color, moving, shooting }) {
