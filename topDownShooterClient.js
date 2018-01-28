@@ -29,7 +29,8 @@
             moving: {
                 x: 0,
                 y: 0
-            }
+            },
+            health: 100
         }
     }
 
@@ -68,6 +69,11 @@
                 },
                 MERGE_PLAYER_SHOOTING({ state }, { id, shooting }) {
                     Object.assign(state.playersById[id].shooting, shooting)
+                },
+                SET_PLAYER_HEALTH({ state }, { id, health }) {
+                    if (state.playersById[id]) {
+                        state.playersById[id].health = health
+                    }
                 },
                 ADD_PLAYER({ state }, player) {
                     state.playersById[player.id] = player
@@ -126,20 +132,43 @@
                             state.blood.addTrail(x, y, size)
                         }, time)
                     }
-                    bleed(20, 2)
-                    bleed(30, 1.8)
-                    bleed(40, 1.6)
+                    bleed(20, 1.5)
+                    bleed(30, 1.4)
+                    bleed(40, 1.3)
                     bleed(50, 1.2)
                     bleed(90, 1)
                     bleed(120, 1)
                     bleed(200, 1)
                     bleed(300, 1)
+                    bleed(320, 1)
+                    bleed(340, 1.8)
+                    bleed(360, 1.5)
+                    bleed(380, 1.5)
+                    bleed(400, 1)
+                    bleed(420, 1)
+                    bleed(440, 1)
+                    bleed(460, 1)
+                    bleed(480, 1)
+                    bleed(500, 1)
                 },
                 killPlayer({ state, commit }, playerId) {
                     if (state.playersById[playerId]) {
                         let { x, y } = state.playersById[playerId]
                         commit('REMOVE_PLAYER', playerId)
                         commit('ADD_BLOOD', { x, y })
+                    }
+                },
+                playerShot({ state, dispatch, commit }, { id: playerId, damage }) {
+                    if (state.playersById[playerId]) {
+                        let { x, y, health } = state.playersById[playerId]
+                        let newHealth = health - damage
+                        if (newHealth <= 0) {
+                            dispatch('killPlayer', playerId)
+                        }
+                        else {
+                            commit('ADD_BLOOD', { x, y })
+                            commit('SET_PLAYER_HEALTH', { id: playerId, health: newHealth })
+                        }
                     }
                 },
                 firePlayerWeapon({ state, commit }, { id, direction }) {
@@ -173,10 +202,10 @@
     store.commit('ADD_PLAYER', createOwnPlayer());
 
     let canvas = document.createElement('canvas')
-    canvas.width = 768;
-    canvas.height = 768;
-    canvas.style.width = '768px'
-    canvas.style.height = '768px'
+    canvas.width = 1680;
+    canvas.height = 1050;
+    canvas.style.width = '1680px'
+    canvas.style.height = '1000px'
     document.body.appendChild(canvas)
     let context = canvas.getContext('2d')
     localStore.commit('SET_BLOOD_ENGINE', Blood(canvas, context));
@@ -212,9 +241,9 @@
 
     function draw(canvas, context) {
         context.clearRect(0, 0, canvas.width, canvas.height)
-        if(backgroundImage.complete){
+        if (backgroundImage.complete) {
             context.globalAlpha = 0.8;
-            context.drawImage(backgroundImage,0,0,768,768)
+            context.drawImage(backgroundImage, 0, 0, canvas.width, canvas.height)
             context.globalAlpha = 1;
         }
         store.state.blood.animateAndDraw()
@@ -228,8 +257,8 @@
             let bullet = store.state.bullets[bulletId]
             drawBullet(context, bullet)
         }
-        if(vignetteImage.complete){
-            context.drawImage(vignetteImage,0,0,768,768)
+        if (vignetteImage.complete) {
+            context.drawImage(vignetteImage, 0, 0, canvas.width, canvas.height)
         }
     }
 

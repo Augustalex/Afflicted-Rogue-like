@@ -42,7 +42,10 @@
                 })
                 if (intersects) {
                     localStore.commit('REMOVE_BULLET', bulletId)
-                    store.dispatch('killPlayer', collidable.id)
+                    store.dispatch('playerShot', {
+                        id: collidable.id,
+                        damage: 5
+                    })
                 }
             }
 
@@ -79,7 +82,7 @@
                 currentPosition.x = x
                 currentPosition.y = y
                 localStore.commit('SET_PLAYER_POS', { id: playerId, x, y })
-                if (Math.random() < .1 * delta) {
+                if (Math.random() < .2 * delta) {
                     store.dispatch('addBloodTrail', playerId)
                 }
 
