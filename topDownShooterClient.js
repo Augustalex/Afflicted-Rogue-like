@@ -255,7 +255,7 @@
 
         for (let bulletId of Object.keys(store.state.bullets)) {
             let bullet = store.state.bullets[bulletId]
-            drawBullet(context, bullet)
+            drawBullet(context, bullet, store.state.playersById[bullet.shooterId].color)
         }
         if (vignetteImage.complete) {
             context.drawImage(vignetteImage, 0, 0, canvas.width, canvas.height)
@@ -283,8 +283,8 @@
         fillRectRot(gunPosX, gunPosY, 8, 3, dir)
     }
 
-    function drawBullet(context, bullet) {
-        context.fillStyle = 'yellow'
+    function drawBullet(context, bullet, color) {
+        context.fillStyle = color
         let dir = Math.atan2(bullet.direction.y, bullet.direction.x);
         fillRectRot(bullet.x, bullet.y, 5, 5, dir)
     }
