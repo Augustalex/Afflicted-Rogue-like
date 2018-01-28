@@ -214,6 +214,11 @@
     var vignetteImage = new Image();
     vignetteImage.src = './sprites/vignette.png';
 
+    let colorByShooterId = {}
+    setInterval(() => {
+        colorByShooterId = {}
+    }, 30000)
+
     let respawning = false
     let lastTime = 0
     const loop = time => {
@@ -251,11 +256,12 @@
         let players = Object.keys(store.state.playersById).map(key => store.state.playersById[key])
         for (let player of players) {
             drawPlayer(context, player)
+            colorByShooterId[player.id] = player.color
         }
 
         for (let bulletId of Object.keys(store.state.bullets)) {
             let bullet = store.state.bullets[bulletId]
-            drawBullet(context, bullet, store.state.playersById[bullet.shooterId].color)
+            drawBullet(context, bullet, colorByShooterId[bullet.shooterId])
         }
         if (vignetteImage.complete) {
             context.drawImage(vignetteImage, 0, 0, canvas.width, canvas.height)
