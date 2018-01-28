@@ -119,6 +119,11 @@
                     if (state.blood) {
                         state.blood.add(x, y)
                     }
+                },
+                ADD_BURN({ state }, { x, y }) {
+                    if (state.blood) {
+                        state.blood.addBurn(x, y, 3)
+                    }
                 }
             },
             actions: {
@@ -197,8 +202,10 @@
 
                     setTimeout(() => {
                         if (!state.bullets[bulletId]) return;
+                        let { x, y } = state.bullets[bulletId]
                         commit('REMOVE_BULLET', bulletId)
-                    }, 2500);
+                        commit('ADD_BURN', { x, y })
+                    }, Math.round(Math.random() * 200) + 500);
                 }
             }
         }
@@ -259,8 +266,8 @@
             context.globalAlpha = 1;
             context.drawImage(backgroundImage, 0, 0, canvas.width, canvas.height)
             context.globalAlpha = 0.5;
-            context.fillStyle="black";
-            context.fillRect(0,0, canvas.width, canvas.height);
+            context.fillStyle = "black";
+            context.fillRect(0, 0, canvas.width, canvas.height);
             context.globalAlpha = 1;
         }
         store.state.blood.animateAndDraw()
@@ -279,12 +286,12 @@
             context.drawImage(vignetteImage, 0, 0, canvas.width, canvas.height)
         }
 
-         context.filter = "brightness(" + 1 + ") blur(" + 15 + "px)";
-         context.globalCompositeOperation = "lighten";
-         context.globalAlpha = 0.5;
-         context.drawImage(canvas, 0, 0);
-         context.filter = "none";
-         context.globalCompositeOperation = "source-over";
+        context.filter = "brightness(" + 1 + ") blur(" + 15 + "px)";
+        context.globalCompositeOperation = "lighten";
+        context.globalAlpha = 0.5;
+        context.drawImage(canvas, 0, 0);
+        context.filter = "none";
+        context.globalCompositeOperation = "source-over";
     }
 
     function drawPlayer(context, { x, y, color, moving, shooting }) {

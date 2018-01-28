@@ -29,8 +29,13 @@ module.exports = function (originalCanvas, originalContext) {
     }
 
     function render() {
-        ctx.fillStyle = "#F00";
+        let color = particles.length && particles[0].color
+        ctx.fillStyle = color;
         for (var i = 0; i < particles.length; i++) {
+            if (ctx.fillStyle !== particles[i].color) {
+                ctx.fillStyle = particles[i].color
+            }
+
             if (Math.random() < 0.1) {
                 continue;
             }
@@ -50,7 +55,19 @@ module.exports = function (originalCanvas, originalContext) {
                     x,
                     y,
                     angle: i,
-                    size: 1 + size * Math.random()
+                    size: 1 + size * Math.random(),
+                    color: '#F00'
+                });
+            }
+        },
+        addBurn(x, y, size = 1) {
+            for (let i = 0; i < 12; i++) {
+                particles.push({
+                    x,
+                    y,
+                    angle: i,
+                    size: 1 + size * Math.random(),
+                    color: '#000'
                 });
             }
         },
@@ -60,7 +77,8 @@ module.exports = function (originalCanvas, originalContext) {
                     x,
                     y,
                     angle: i * 5,
-                    size: 5 + Math.random() * 3
+                    size: 5 + Math.random() * 3,
+                    color: '#F00'
                 });
             }
         },
