@@ -1,8 +1,8 @@
 (function () {
     let Blood = require('./Blood.js')
     let io = require('socket.io-client')
-    //let socket = io.connect('http://127.0.0.1:3032');
-    let socket = io.connect('http://192.168.1.106:3032');
+    let socket = io.connect('http://127.0.0.1:3032');
+    //let socket = io.connect('http://192.168.1.106:3032');
     let Store = require('./Store.js')
     let StoreProxy = require('./StoreProxy.js')
     const input = require('./input.js');
@@ -87,9 +87,10 @@
                 ADD_BULLET({ state }, bullet) {
                     state.bullets[bullet.id] = bullet
                 },
-                SET_BULLET_POS({ state }, { id, x, y }) {
+                SET_BULLET_POS({ state }, { id, x, y, height }) {
                     state.bullets[id].x = x
                     state.bullets[id].y = y
+                    state.bullets[id].height = height
                 },
                 REMOVE_PLAYER({ state }, playerId) {
                     if (state.playersById[playerId]) {
@@ -198,6 +199,7 @@
                             x: newDirectionX,
                             y: newDirectionY
                         },
+                        height: 12,
                         isEnemy: false
                     }
                     commit('ADD_BULLET', bullet)
@@ -226,7 +228,8 @@
                                 x: newDirectionX /3,
                                 y: newDirectionY /3
                             },
-                            isEnemy: true
+                            isEnemy: true,
+                            height: 22
                         }
                         commit('ADD_BULLET', bullet)
 

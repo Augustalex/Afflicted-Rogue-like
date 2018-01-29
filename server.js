@@ -4,7 +4,6 @@ var server = http.createServer(function (request, response) {
 });
 var io = require('socket.io')(server);
 server.listen(3032, '0.0.0.0');
-
 let log = [];
 io.on('connection', socket => {
     socket.on('dispatch', data => {

@@ -6,6 +6,9 @@
     var towerImage = new Image();
     towerImage.src = './sprites/tower.png';
 
+    let shadows = false; // Also enable fallingBullets in fysik.js
+    let perspective = false;
+
     let colorByShooterId = {}
     setInterval(() => {
         colorByShooterId = {}
@@ -54,21 +57,21 @@
             context.globalAlpha = 1;
         }
 
-        if(towerImage.complete) {
-            context.drawImage(towerImage, 400 - 34/2, 400- 34/2, 34, 34)
+        if (towerImage.complete) {
+            context.drawImage(towerImage, 400 - 34 / 2, 400 - 34 / 2, 34, 34)
         }
 
         if (store.state.localPlayerDead) {
-            context.filter = "brightness(" + .2 + ")";
+            context.filter = "brightness(.2)";
             context.globalAlpha = 1;
             context.drawImage(canvas, 0, 0);
             context.filter = "none";
             context.globalCompositeOperation = "source-over";
         }
         else {
-            context.filter = "brightness(" + 1 + ") blur(" + 15 + "px)";
+            context.filter = "brightness(" + 1.0 + ") blur(" + 8 + "px)";
             context.globalCompositeOperation = "lighten";
-            context.globalAlpha = 0.5;
+            context.globalAlpha = 0.6;
             context.drawImage(canvas, 0, 0);
             context.filter = "none";
             context.globalCompositeOperation = "source-over";
@@ -81,8 +84,39 @@
                 aimVector = shooting.direction
             }
             let dir = Math.atan2(aimVector.y, aimVector.x)
+
+            if (shadows) {
+                context.fillStyle = 'black'
+                context.globalAlpha = 0.5;
+                fillRectRot(x, y + 12, 10, 10, dir)
+                context.filter = "none";
+            }
+
+            context.fillStyle = color
+            if (perspective) {
+                let horMult = Math.sin(dir+ Math.PI / 4)
+                let vertMult = Math.cos(dir+ Math.PI / 4)
+                if (dir === 0 || (dir / (Math.PI / 2) % 1 === 0)) {
+                    horMult = Math.sin(dir);
+                    vertMult = Math.cos(dir);
+                }
+                var gradient = context.createLinearGradient(0, 0, horMult * 8, vertMult * 8);
+                context.globalAlpha = 1;
+                gradient.addColorStop(0, color);
+                gradient.addColorStop(1, "black");
+                for (let yy = y + 10; yy > y; yy -= 1) {
+                    context.fillStyle = gradient
+                    fillRectRot(x, yy, 10, 10, dir)
+                }
+                context.globalAlpha = 1;
+                gradient = context.createLinearGradient(0, 0, horMult * 12, vertMult * 12);
+                gradient.addColorStop(0, color);
+                gradient.addColorStop(1, "black");
+                context.fillStyle = gradient
+            }
+            context.globalAlpha = 1;
             fillRectRot(x, y, 10, 10, dir)
-            context.fillStyle = 'black'
+            context.fillStyle = color
             let gunPosX = x + Math.cos(dir + Math.PI / 4) * 9
             let gunPosY = y + Math.sin(dir + Math.PI / 4) * 9
             fillRectRot(gunPosX, gunPosY, 8, 3, dir)
@@ -90,6 +124,15 @@
 
         function drawBullet(context, bullet, color) {
             if (bullet.isEnemy) {
+                if (shadows) {
+                    context.beginPath();
+                    context.arc(bullet.x, bullet.y + bullet.height / 1.1, 8 + bullet.height / 4, 0, 2 * Math.PI, false);
+                    context.fillStyle = 'black';
+                    context.globalAlpha = Math.max(1.1 - bullet.height / 22, 0);
+                    context.fill();
+                    context.globalAlpha = 1;
+                }
+
                 context.beginPath();
                 context.arc(bullet.x, bullet.y, 8, 0, 2 * Math.PI, false);
                 context.fillStyle = 'white';
@@ -99,9 +142,16 @@
                 context.stroke();
             }
             else {
-                context.fillStyle = color
                 let dir = Math.atan2(bullet.direction.y, bullet.direction.x);
+                if (shadows) {
+                    context.fillStyle = 'black'
+                    context.globalAlpha = 0.8;
+                    fillRectRot(bullet.x, bullet.y + bullet.height, 12, 4, dir)
+                }
+                context.globalAlpha = bullet.height;
+                context.fillStyle = color
                 fillRectRot(bullet.x, bullet.y, 12, 4, dir)
+                context.globalAlpha = 1;
             }
         }
 

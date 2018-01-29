@@ -3,7 +3,9 @@
         bulletSpeed: 50,
         timeToShoot: .5,
         enemyTimeToShoot: 10,
-        playerSize: 10
+        playerSize: 10,
+        fallingBullets: false,
+        bulletGravity: .5,
     }
 
     let playerObjectsById = {}
@@ -24,7 +26,6 @@
         if (!enemy) {
             enemy = Enemy({ localStore, store })
         }
-        console.log(enemy);
         enemy.fysik(delta)
 
         for (let bulletId of Object.keys(store.state.bullets)) {
@@ -32,6 +33,15 @@
             let newPos = {
                 x: bullet.x + bullet.direction.x * constants.bulletSpeed * delta,
                 y: bullet.y + bullet.direction.y * constants.bulletSpeed * delta
+            }
+            if(constants.fallingBullets){
+                newPos.y += constants.bulletGravity * delta;
+                newPos.height = bullet.height - constants.bulletGravity * delta;
+                if(newPos.height <= 0){
+                    localStore.commit('REMOVE_BULLET', bulletId)
+                    localStore.commit('ADD_BURN', newPos)
+                    continue
+                }
             }
 
             let collidableObjects = Object.keys(playerObjectsById).map(k => playerObjectsById[k])
@@ -82,7 +92,7 @@
             fysik(delta) {
                 lastTime+=delta
                 if(lastTime > constants.enemyTimeToShoot){
-                    store.dispatch('fireEnemyWeapon');
+                    localStore.dispatch('fireEnemyWeapon');
                     lastTime -= constants.enemyTimeToShoot
                 }
             }
