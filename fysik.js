@@ -2,10 +2,12 @@
     let constants = {
         bulletSpeed: 50,
         timeToShoot: .5,
+        enemyTimeToShoot: 10,
         playerSize: 10
     }
 
     let playerObjectsById = {}
+    let enemy = null
     setInterval(() => {
         playerObjectsById = {}
     }, Math.round(Math.random() * 5000) + 5000)
@@ -19,6 +21,11 @@
             }
             player.fysik(delta)
         }
+        if (!enemy) {
+            enemy = Enemy({ localStore, store })
+        }
+        console.log(enemy);
+        enemy.fysik(delta)
 
         for (let bulletId of Object.keys(store.state.bullets)) {
             let bullet = store.state.bullets[bulletId]
@@ -33,11 +40,22 @@
 
                 let playerPosition = collidable.currentPosition
 
+                let playerWidth = collidable.width;
+                let playerHeight = collidable.height;
+                if(bullet.isEnemy){
+                    // hack to collide with bigger bullets
+                    playerWidth = playerWidth*2
+                    playerHeight = playerHeight*2
+                }
+                let playerTopLeft = {
+                    x: playerPosition.x - (playerWidth /2),
+                    y: playerPosition.y - (playerHeight /2)
+                }
                 let playerLines = [
-                    [playerPosition.x, playerPosition.y, playerPosition.x + collidable.width, playerPosition.y],
-                    [playerPosition.x + collidable.width, playerPosition.y, playerPosition.x + collidable.width, playerPosition.y + collidable.height],
-                    [playerPosition.x + collidable.width, playerPosition.y + collidable.height, playerPosition.x, playerPosition.y + collidable.height],
-                    [playerPosition.x, playerPosition.y + collidable.height, playerPosition.x, playerPosition.y],
+                    [playerTopLeft.x, playerTopLeft.y, playerTopLeft.x + playerWidth, playerTopLeft.y],
+                    [playerTopLeft.x + playerWidth, playerTopLeft.y, playerTopLeft.x + playerWidth, playerTopLeft.y + playerHeight],
+                    [playerTopLeft.x + playerWidth, playerTopLeft.y + playerHeight, playerTopLeft.x, playerTopLeft.y + playerHeight],
+                    [playerTopLeft.x, playerTopLeft.y + playerHeight, playerTopLeft.x, playerTopLeft.y],
                 ]
 
                 let intersects = playerLines.some(line => {
@@ -56,6 +74,21 @@
         }
     }
 
+    function Enemy({ localStore, store }) {
+
+        let lastTime = 0
+
+        return {
+            fysik(delta) {
+                lastTime+=delta
+                if(lastTime > constants.enemyTimeToShoot){
+                    store.dispatch('fireEnemyWeapon');
+                    lastTime -= constants.enemyTimeToShoot
+                }
+            }
+        }
+    }
+
     function Player({ localStore, store, playerId }) {
         let state = store.state.playersById[playerId]
 
@@ -66,8 +99,8 @@
             lastPosition,
             currentPosition,
             id: playerId,
-            width: 10,
-            height: 10,
+            width: 12,
+            height: 12,
             fysik(delta) {
                 let player = store.state.playersById[playerId]
                 let x = player.x

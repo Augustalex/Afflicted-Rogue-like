@@ -3,6 +3,8 @@
     backgroundImage.src = './sprites/back.png';
     var vignetteImage = new Image();
     vignetteImage.src = './sprites/vignette.png';
+    var towerImage = new Image();
+    towerImage.src = './sprites/tower.png';
 
     let colorByShooterId = {}
     setInterval(() => {
@@ -42,12 +44,18 @@
             let playerHealth = store.state.playersById[clientId].health
             let vignetteContext = vignetteCanvas.getContext('2d')
             vignetteContext.clearRect(0, 0, vignetteCanvas.width, vignetteCanvas.height)
+            context.globalAlpha = 0.5;
             vignetteContext.globalCompositeOperation = 'source-over'
             vignetteContext.drawImage(vignetteImage, 0, 0, vignetteCanvas.width, vignetteCanvas.height)
             vignetteContext.globalCompositeOperation = 'source-in'
             vignetteContext.fillStyle = `rgb(${255 * ((100 - playerHealth) / 100)},0,0)`;
             vignetteContext.fillRect(0, 0, canvas.width, canvas.height);
             context.drawImage(vignetteCanvas, 0, 0, canvas.width, canvas.height)
+            context.globalAlpha = 1;
+        }
+
+        if(towerImage.complete) {
+            context.drawImage(towerImage, 400 - 34/2, 400- 34/2, 34, 34)
         }
 
         if (store.state.localPlayerDead) {
@@ -81,9 +89,20 @@
         }
 
         function drawBullet(context, bullet, color) {
-            context.fillStyle = color
-            let dir = Math.atan2(bullet.direction.y, bullet.direction.x);
-            fillRectRot(bullet.x, bullet.y, 12, 4, dir)
+            if (bullet.isEnemy) {
+                context.beginPath();
+                context.arc(bullet.x, bullet.y, 8, 0, 2 * Math.PI, false);
+                context.fillStyle = 'white';
+                context.fill();
+                context.lineWidth = 2;
+                context.strokeStyle = '#ac00ff';
+                context.stroke();
+            }
+            else {
+                context.fillStyle = color
+                let dir = Math.atan2(bullet.direction.y, bullet.direction.x);
+                fillRectRot(bullet.x, bullet.y, 12, 4, dir)
+            }
         }
 
         function fillRectRot(x, y, width, height, dir) {

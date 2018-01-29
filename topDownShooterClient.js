@@ -197,7 +197,8 @@
                         direction: {
                             x: newDirectionX,
                             y: newDirectionY
-                        }
+                        },
+                        isEnemy: false
                     }
                     commit('ADD_BULLET', bullet)
 
@@ -207,6 +208,35 @@
                         commit('REMOVE_BULLET', bulletId)
                         commit('ADD_BURN', { x, y })
                     }, Math.round(Math.random() * 200) + 5000);
+                },
+                fireEnemyWeapon({ state, commit }) {
+                    let shots = 3 + Math.round(Math.random() * 2)
+                    for (let directionRad = 0; directionRad < Math.PI * 2; directionRad += Math.PI *2 / shots) {
+
+                        let bulletId = genId()
+                        let newDirectionX = Math.cos(directionRad)
+                        let newDirectionY = Math.sin(directionRad)
+
+                        let bullet = {
+                            x: 400,
+                            y: 400,
+                            id: bulletId,
+                            shooterId: null,
+                            direction: {
+                                x: newDirectionX /3,
+                                y: newDirectionY /3
+                            },
+                            isEnemy: true
+                        }
+                        commit('ADD_BULLET', bullet)
+
+                        setTimeout(() => {
+                            if (!state.bullets[bulletId]) return;
+                            let { x, y } = state.bullets[bulletId]
+                            commit('REMOVE_BULLET', bulletId)
+                            commit('ADD_BURN', { x, y })
+                        }, Math.round(Math.random() * 200) + 5000);
+                    }
                 }
             }
         }
