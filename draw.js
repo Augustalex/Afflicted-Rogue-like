@@ -126,7 +126,7 @@
             if (bullet.isEnemy) {
                 if (shadows) {
                     context.beginPath();
-                    context.arc(bullet.x, bullet.y + bullet.height / 1.1, 8 + bullet.height / 4, 0, 2 * Math.PI, false);
+                    context.arc(bullet.x, bullet.y + bullet.height / 1.1 +1, 8 + bullet.height / 4, 0, 2 * Math.PI, false);
                     context.fillStyle = 'black';
                     context.globalAlpha = Math.max(1.1 - bullet.height / 22, 0);
                     context.fill();
@@ -146,7 +146,7 @@
                 if (shadows) {
                     context.fillStyle = 'black'
                     context.globalAlpha = 0.8;
-                    fillRectRot(bullet.x, bullet.y + bullet.height, 12, 4, dir)
+                    fillRectRot(bullet.x, bullet.y + bullet.height +2, 12, 4, dir)
                 }
                 context.globalAlpha = bullet.height;
                 context.fillStyle = color

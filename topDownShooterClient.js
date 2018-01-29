@@ -199,7 +199,7 @@
                             x: newDirectionX,
                             y: newDirectionY
                         },
-                        height: 12,
+                        height: 8 + Math.random(),
                         isEnemy: false
                     }
                     commit('ADD_BULLET', bullet)
